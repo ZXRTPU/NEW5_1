@@ -146,7 +146,7 @@ void Chassis_task(void const *pvParameters)
     chassis_motol_speed_calculate();
 
     // 电机电流控制
-// Motor_Speed_limiting(chassis.speed_target,motor_max);
+    Motor_Speed_limiting(chassis.speed_target,motor_max);
 
     chassis_current_give();
     // imu_task();
@@ -174,8 +174,8 @@ static void Chassis_loop_Init()
   chassis.Vx = 0;
   chassis.Vy = 0;
   chassis.Wz = 0;
-
 }
+
 /*嘿嘿 *///键盘控制
 static void read_keyboard(void)
 {
@@ -194,36 +194,7 @@ static void read_keyboard(void)
   else if (b_flag)
     chassis_wz_max = CHASSIS_WZ_MAX_2;
 }
-/*嘿嘿回来*/
-/*static void mode_chooce()
-{
-  // 遥控器控制
-  // chanel 0 left max==-660,right max==660
-  // chanel 1 up max==660,down max==-660
-  // chanel 2 left max==-660,right max==660
-  // chanel 3 up max==660,down max==-660
-  // chanel 4 The remote control does not have this channel
 
-  if (rc_ctrl.rc.s[0] == 1)
-  {
-    key_control();
-    gyroscope();
-  }
-  else if (rc_ctrl.rc.s[0] == 2|| chassis_mode == 2)
-  {
-    key_control();
-    RC_Move();
-  }
-  else if (rc_ctrl.rc.s[0] == 3 || chassis_mode == 1)
-  {
-    key_control();
-    chassis_follow();
-
-  }
-  // else
-  // {
-  // }
-}*/
 static void mode_chooce()
 {
   // 右拨杆中，键鼠操作
@@ -244,6 +215,7 @@ static void mode_chooce()
         RC_Move();
       }
   }
+
     // 右拨杆下，遥控操作
     else if (rc_ctrl.rc.s[0] == 2)
     {
@@ -261,18 +233,18 @@ static void mode_chooce()
 // // 运动解算
 static void chassis_motol_speed_calculate()
 {
-
   // 根据分解的速度调整电机速度目标
   // chassis.speed_target[CHAS_LF] = 3*(-chassis.Wz)*0.4 + chassis.Vx + chassis.Vy;
   // chassis.speed_target[CHAS_RF] = 3*(-chassis.Wz)*0.4 + chassis.Vx - chassis.Vy;
   // chassis.speed_target[CHAS_RB] = 3*(-chassis.Wz)*0.4 - chassis.Vx - chassis.Vy;
   // chassis.speed_target[CHAS_LB] = 3*(-chassis.Wz)*0.4 - chassis.Vx + chassis.Vy;
 
-    chassis.speed_target[CHAS_LF] = 3*(-chassis.Wz)*0.4 + chassis.Vx - chassis.Vy;
-  chassis.speed_target[CHAS_RF] = 3*(-chassis.Wz)*0.4 - chassis.Vx - chassis.Vy;
-  chassis.speed_target[CHAS_RB] = 3*(-chassis.Wz)*0.4 + chassis.Vx + chassis.Vy;
-  chassis.speed_target[CHAS_LB] = 3*(-chassis.Wz)*0.4 - chassis.Vx + chassis.Vy;
+  chassis.speed_target[0] = 3*(-chassis.Wz)*0.4 + chassis.Vx - chassis.Vy;
+  chassis.speed_target[1] = 3*(-chassis.Wz)*0.4 - chassis.Vx - chassis.Vy;
+  chassis.speed_target[2] = 3*(-chassis.Wz)*0.4 + chassis.Vx + chassis.Vy;
+  chassis.speed_target[3] = 3*(-chassis.Wz)*0.4 - chassis.Vx + chassis.Vy;
 }
+
 // 运动解算
 // 速度限制函数
 static void Motor_Speed_limiting(volatile int16_t *motor_speed, int16_t limit_speed)
@@ -301,7 +273,7 @@ static void Motor_Speed_limiting(volatile int16_t *motor_speed, int16_t limit_sp
     }
   }
 }
-
+ 
 // 电机电流控制
 static void chassis_current_give()
 {
@@ -432,6 +404,7 @@ static void chassis_follow(void)
     cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
 
 }
+
 /*************************** 急停模式 ****************************/
 static void chassis_mode_stop()
 {
@@ -448,7 +421,7 @@ static void yaw_correct(void)
   if (yaw_correction_flag)
   {
     yaw_correction_flag = 0;
-    Yaw_init = Yaw1;//下面的
+    Yaw_init = yaw12;//下面的
   }
   // Wz为负，顺时针旋转，陀螺仪飘 60°/min（以3000为例转出的，根据速度不同调整）
   // 解决yaw偏移，完成校正
@@ -461,7 +434,7 @@ static void yaw_correct(void)
       imu_err_yaw += 0.001f;
     // imu_err_yaw += 0.001f * chassis_speed_max / 3000.0f;
   }
-  Yaw_update = Yaw1 - Yaw_init + imu_err_yaw;
+  Yaw_update = yaw12 - Yaw_init + imu_err_yaw;
 }
 /*************************** 键盘控制函数 ************************/
 static void key_control(void)
@@ -470,6 +443,7 @@ static void key_control(void)
     key_y_fast += KEY_START_OFFSET;
   else
     key_y_fast -= KEY_STOP_OFFSET;
+
   if (a_flag)
     key_y_slow += KEY_START_OFFSET;
   else

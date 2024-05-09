@@ -121,6 +121,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
       // vision_Vx = ((int16_t)((rx_data[4] << 8) | rx_data[5])) / 100; // 导航所需Vx
       // vision_Vy = ((int16_t)((rx_data[6] << 8) | rx_data[7])) / 100; // 导航所需Vy
     }
+
     // 云台电机信息接收
     if (rx_header.StdId == 0x209) // 判断标识符，标识符为0x204+ID
     {
@@ -158,6 +159,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
   {
     uint8_t rx_data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data); // receive can2 data
+
     // if (rx_header.StdId == 0x209)                                  // 判断标识符，标识符为0x204+ID
     // {
     //   gimbal_Yaw.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
@@ -165,6 +167,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
     //   gimbal_Yaw.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
     //   gimbal_Yaw.motor_info.temp = rx_data[6];
     // }
+
+    // 云台电机信息接收
+    if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
+    {
+      gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
+      gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
+      gimbal_Pitch.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
+      gimbal_Pitch.motor_info.temp = rx_data[6];
+    }
 
     // 發射機構电机信息接收
     if ((rx_header.StdId >= 0x205)     // 205-208
@@ -191,18 +202,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
         can_cnt_1++;
       }
     }
-    // 云台电机信息接收
-    if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
-    {
-      gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-      gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-      gimbal_Pitch.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
-      gimbal_Pitch.motor_info.temp = rx_data[6];
-    }
 
     if (rx_header.StdId == 0x211)
     {
-
       extern float powerdata[4];
       uint16_t *pPowerdata = (uint16_t *)rx_data;
 
@@ -223,7 +225,7 @@ void can_remote(uint8_t sbus_buf[], uint8_t can_send_id) // 调用can来发送�
   tx_header.RTR = CAN_RTR_DATA;  // 数据帧
   tx_header.DLC = 8;             // 发送数据长度（字节）
 
-   HAL_CAN_AddTxMessage(&hcan1, &tx_header, sbus_buf, (uint32_t *)CAN_TX_MAILBOX0);
+  HAL_CAN_AddTxMessage(&hcan1, &tx_header, sbus_buf, (uint32_t *)CAN_TX_MAILBOX0);
 }
 
 // 底盤電機控制
@@ -249,7 +251,7 @@ void set_motor_current_chassis(uint8_t id_range, int16_t v1, int16_t v2, int16_t
   HAL_CAN_AddTxMessage(&hcan1, &tx_header, tx_data, (uint32_t *)CAN_TX_MAILBOX0);
 }
 
-// 雲臺電機控制
+// 雲臺電機控制 - CAN1
 void set_motor_current_gimbal(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4)
 {
   CAN_TxHeaderTypeDef tx_header;

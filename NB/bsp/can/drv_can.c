@@ -79,23 +79,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
       Yaw1=Yaw0/100.00;//小数部分
     }
 
-    // 云台电机信息接收
-    // if (rx_header.StdId == 0x209) // 判断标识符，标识符为0x204+ID
-    // {
-    //   gimbal_Yaw.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-    //   gimbal_Yaw.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-    //   gimbal_Yaw.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
-    //   gimbal_Yaw.motor_info.temp = rx_data[6];
-    // }
-
-    // // 云台电机信息接收
-    // if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
-    // {
-    //   gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-    //   gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-    //   gimbal_Pitch.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
-    //   gimbal_Pitch.motor_info.temp = rx_data[6];
-    // }
     // 底盤电机信息接收
     if ((rx_header.StdId >= 0x201)     // 201-204
         && (rx_header.StdId <= 0x204)) // 判断标识符，标识符为0x200+ID
@@ -122,28 +105,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
       // INS_bottom.Roll = (int16_t)((rx_data[2] << 8) | rx_data[3]);  // roll（roll和pitch根据c放置位置不同可能交换）
       // INS_bottom.Pitch = (int16_t)((rx_data[4] << 8) | rx_data[5]); // pitch
     }
-    // 發射機構电机信息接收
-    // if ((rx_header.StdId >= 0x205)     // 205-208
-    //     && (rx_header.StdId <= 0x208)) // 判断标识符，标识符为0x200+ID
-    // {
-    //   uint8_t index = rx_header.StdId - 0x205; // get motor index by can_id
-    //   shooter.motor_info[index].rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-    //   shooter.motor_info[index].rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-    //   shooter.motor_info[index].torque_current = ((rx_data[4] << 8) | rx_data[5]);
-    //   shooter.motor_info[index].temp = rx_data[6];
-    //   if (index == 0)
-    //   {
-    //     can_cnt_1++;
-    //   }
-    // }
-    // // 云台电机信息接收
-    // if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
-    // {
-    //   gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-    //   gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-    //   gimbal_Pitch.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
-    //   gimbal_Pitch.motor_info.temp = rx_data[6];
-    // }
+
   if (rx_header.StdId == 0x35)                                   // 上C向下C传IMU数据
     {
             // rc_ctrl.rc.ch[4] = ((rx_data[0] | (rx_data[1] << 8)) & 0x07ff) - RC_CH_VALUE_OFFSET;

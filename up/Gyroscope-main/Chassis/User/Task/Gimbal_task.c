@@ -4,8 +4,8 @@
 #include "exchange.h"
 #include "drv_can.h"
 #define MAX_SPEED 200
-#define MAX_ANGLE 1600//3400
-#define MIN_ANGLE -720//1400//平的700
+#define MAX_ANGLE 1600 // 3400
+#define MIN_ANGLE -720 // 1400//平的700
 #define ANGLE1 700
 
 extern INS_t INS;
@@ -88,9 +88,9 @@ static void gimbal_current_give()
     gimbal_Yaw.motor_info.set_current = pid_calc(&gimbal_Yaw.pid, 57.3F * INS.Gyro[2], gimbal_Yaw.speed_target); // 57.3F * INS.Gyro[2]
     gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     // if (rc_ctrl.rc.s[0] == 2)
-        // set_motor_current_gimbal(1, 0, 0, 0, 0);
+    // set_motor_current_gimbal(1, 0, 0, 0, 0);
     // else
-        set_motor_current_gimbal(1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
+    set_motor_current_gimbal(1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
     set_motor_current_gimbal2(1, 0, 0, gimbal_Pitch.motor_info.set_current, 0);
     // set_curruent(MOTOR_6020_1, hcan1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
     // set_curruent(MOTOR_6020_1, hcan2, 0, 0, gimbal_Pitch.motor_info.set_current, 0);
