@@ -6,12 +6,14 @@
 #include "bsp_dwt.h"
 #include <stdbool.h>
 #include <pid.h>
+#include "VideoTransmitter.h"
 #define TRIGGER_SINGLE_ANGLE 1620 // 36*360/8
 
 // 电机0为拨盘电机，电机1为弹舱盖电机，电机2、3为摩擦轮电机
 shooter_t shooter; // 发射机构信息结构体
 
 extern RC_ctrl_t rc_ctrl[2]; // 遥控器信息结构体
+extern Video_ctrl_t video_ctrl[2];
 bool is_angle_control = false;//单发
 float current_time = 0;
 float last_time = 0;
@@ -74,13 +76,14 @@ static void model_choice(void)
     // 取消注释开始发射
     bay_control();
     // 取消注释开始发射
-    if (rc_ctrl[TEMP].rc.switch_left == 3 || rc_ctrl[TEMP].rc.switch_left == 1)
+    if (rc_ctrl[TEMP].rc.switch_left == 3 || rc_ctrl[TEMP].rc.switch_left == 1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_F]%2 == 1)
     {
-        // 发射
+        // 发射摩擦轮- F键
         friction_control();
         
+			  //拨盘电机 - E键
 			  //单发
-        if (rc_ctrl[TEMP].rc.switch_right == 3)
+        if (rc_ctrl[TEMP].rc.switch_right == 3 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_E] % 3 == 1)
         {
             if (flag_single)
             {
@@ -90,7 +93,7 @@ static void model_choice(void)
             }
         }
 				//左杆上，连发
-        else if (rc_ctrl[TEMP].rc.switch_left ==1)
+        else if (rc_ctrl[TEMP].rc.switch_left ==1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_E] % 3 == 2)
         {
             shooter.dial_speed_target = 2000;
             is_angle_control = false;

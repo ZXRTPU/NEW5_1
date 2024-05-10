@@ -71,7 +71,7 @@ static void Gimbal_loop_Init()
     gimbal_Pitch.pid_parameter[0] = 60, gimbal_Pitch.pid_parameter[1] = 0, gimbal_Pitch.pid_parameter[2] = 10;
     gimbal_Pitch.pid_angle_parameter[0] = 1, gimbal_Pitch.pid_angle_parameter[1] = 0, gimbal_Pitch.pid_angle_parameter[2] = 0;
     gimbal_Pitch.pid_vision_parameter[0] = 3, gimbal_Pitch.pid_vision_parameter[1] = 0, gimbal_Pitch.pid_vision_parameter[2] = 0;
-	  gimbal_Pitch.angle_target = 500;
+	  gimbal_Pitch.angle_target = 700;
 
     // 初始化pid结构体
     pid_init(&gimbal_Yaw.pid, gimbal_Yaw.pid_parameter, 15000, 15000);
@@ -89,14 +89,15 @@ static void mode_select()
 		// 遥控+键鼠链路
 		if (rc_ctrl[TEMP].rc.switch_right)
 		{
-			// 视觉控制
-			if (rc_ctrl[TEMP].rc.switch_right == 1 || rc_ctrl[TEMP].mouse.press_r == 1) // 左拨杆上 || 按住右键
+			// 视觉控制 - 右杆上拨 或 鼠标右键按下
+      //if (rc_ctrl[TEMP].rc.switch_right == 3 || rc_ctrl[TEMP].mouse.press_r == 1) // 右拨杆中 || 按住右键
+			if (rc_ctrl[TEMP].mouse.press_r == 1) 
 			{
 				gimbal_vision_mode();
 			}
 
-			// 锁yaw模式
-			else // 左拨杆中或下
+			// 锁yaw模式 - 右拨杆中或下
+			else 
 			{
 				gimbal_lock_mode();
 			}
@@ -112,7 +113,7 @@ static void mode_select()
 			}
 
 			// 锁yaw模式
-			else // 左拨杆中或下
+			else 
 			{
 				gimbal_lock_mode();
 			}
@@ -126,6 +127,8 @@ static void gimbal_current_give()
     gimbal_Yaw.motor_info.set_current = pid_calc(&gimbal_Yaw.pid, 57.3F * INS.Gyro[2], gimbal_Yaw.speed_target); // 57.3F * INS.Gyro[2]
     set_motor_current_gimbal(1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
 	  
+	  osDelay(1);
+	 
 	  //pitch轴电机电流发送
 	  //gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     if (switch_is_up(rc_ctrl[TEMP].rc.switch_right) || rc_ctrl[TEMP].mouse.press_r || video_ctrl[TEMP].key_data.right_button_down)
@@ -139,7 +142,7 @@ static void gimbal_current_give()
     {
         gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
-	  set_motor_current_gimbal(1, 0, 0, gimbal_Pitch.motor_info.set_current, 0);
+	  //set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
 }
 
 //视觉控制云台模式
@@ -211,10 +214,9 @@ static void yaw_lock_mode()
 
 		// 遥控器链路
 		if (rc_ctrl[TEMP].rc.switch_right)
-
 		{
 			// 使用非线性映射函数调整灵敏度
-			float normalized_input = rc_ctrl[TEMP].rc.rocker_r_ / 660.0f + rc_ctrl[TEMP].mouse.x / 16384.0f * 100;
+			float normalized_input = rc_ctrl[TEMP].rc.rocker_r_ / 660.0f*2 + rc_ctrl[TEMP].mouse.x / 16384.0f * 100;
 			gimbal_Yaw.angle_target -= pow(fabs(normalized_input), 0.97) * sign(normalized_input) * 0.3;
 		}
 		// 图传链路
@@ -235,7 +237,7 @@ static void pitch_vision_mode()
      // 遥控器链路
      if (rc_ctrl[TEMP].rc.switch_right)
      {
-        // 视觉识别，右拨杆上/鼠标右键
+        // 视觉识别 - 右拨杆上OR鼠标右键按下
          if (switch_is_up(rc_ctrl[TEMP].rc.switch_right) || rc_ctrl[TEMP].mouse.press_r==1 )
          {
              if (vision_is_tracking)
@@ -251,7 +253,7 @@ static void pitch_vision_mode()
                  gimbal_Pitch.angle_target  -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
              }
           }
-
+          
           else
           {
              // 使用非线性映射函数调整灵敏度
@@ -263,7 +265,7 @@ static void pitch_vision_mode()
       // 图传链路
       else
       {
-         // 视觉识别，鼠标右键
+         // 视觉识别 - 鼠标右键按下
          if (video_ctrl[TEMP].key_data.right_button_down == 1)
          {
              if (vision_is_tracking)
@@ -287,16 +289,26 @@ static void pitch_vision_mode()
 }
 
 static void pitch_rc_mode()
-{
-    // Pitch轴
-    // 1600 < gimbal_Pitch.angle_target < 3400
-    if (rc_ctrl[TEMP].rc.rocker_r1>= -660 && rc_ctrl[TEMP].rc.rocker_r1 <= 660)
-    {
-       gimbal_Pitch.angle_target += rc_ctrl[TEMP].rc.rocker_r1/ 660.0 * 0.8;
-			
-       detel_calc2(&gimbal_Pitch.angle_target);
-       gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_angle, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
-    }
+{	
+		// 遥控器链路
+		if (rc_ctrl[TEMP].rc.switch_right)
+		{
+			  if (rc_ctrl[TEMP].rc.rocker_r1>= -660 && rc_ctrl[TEMP].rc.rocker_r1 <= 660)
+       {
+          gimbal_Pitch.angle_target += rc_ctrl[TEMP].rc.rocker_r1/ 660.0;
+       }
+		}
+		
+		// 图传链路
+		else
+		{
+			// 使用非线性映射函数调整灵敏度
+			float normalized_input = video_ctrl[TEMP].key_data.mouse_x / 16384.0f * 50;
+			gimbal_Yaw.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
+		}
+
+     detel_calc2(&gimbal_Pitch.angle_target);
+     gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_angle, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
 }
 
 static void detel_calc(fp32 *angle)

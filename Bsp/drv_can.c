@@ -71,17 +71,19 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
 		// 接收下DM传来的遥控器数据
     if (rx_header.StdId == 0x33) 
     {
-       rc_ctrl[TEMP].rc.rocker_r_ = ((rx_data[0] | (rx_data[1] << 8)) & 0x07ff) - RC_CH_VALUE_OFFSET;                                       //!< Channel 0
-       rc_ctrl[TEMP].rc.rocker_r1 = ((((rx_data[1] >> 3) & 0xff) | (rx_data[2] << 5)) & 0x07ff) - RC_CH_VALUE_OFFSET;                       //!< Channel 1
-       rc_ctrl[TEMP].rc.rocker_l_ = ((((rx_data[2] >> 6) & 0xff) | (rx_data[3] << 2) | (rx_data[4] << 10)) & 0x07ff) - RC_CH_VALUE_OFFSET; //!< Channel 2
-       rc_ctrl[TEMP].rc.rocker_l1 = ((((rx_data[4] >> 1) & 0xff) | (rx_data[5] << 7)) & 0x07ff) - RC_CH_VALUE_OFFSET;                       //!< Channel 3
-                            // 左侧拨轮
-       RectifyRCjoystick();
-			 rc_ctrl[TEMP].rc.switch_right = ((rx_data[5] >> 4) & 0x0003);     //!< Switch right
+       rc_ctrl[TEMP].rc.rocker_r_ = ((rx_data[0] | (rx_data[1] << 8)) & 0x07ff);                                       //!< Channel 0
+       rc_ctrl[TEMP].rc.rocker_r1 = ((((rx_data[1] >> 3) & 0xff) | (rx_data[2] << 5)) & 0x07ff);                       //!< Channel 1
+       rc_ctrl[TEMP].rc.rocker_l_ = ((((rx_data[2] >> 6) & 0xff) | (rx_data[3] << 2) | (rx_data[4] << 10)) & 0x07ff); //!< Channel 2
+       rc_ctrl[TEMP].rc.rocker_l1 = ((((rx_data[4] >> 1) & 0xff) | (rx_data[5] << 7)) & 0x07ff);                       //!< Channel 3
+       rc_ctrl[TEMP].rc.switch_right = ((rx_data[5] >> 4) & 0x0003);     //!< Switch right
        rc_ctrl[TEMP].rc.switch_left = ((rx_data[5] >> 4) & 0x000C) >> 2; //!< Switch left
-       
-       // 鼠标解析
+			// 鼠标解析
        rc_ctrl[TEMP].mouse.x = (rx_data[6] | (rx_data[7] << 8)); //!< Mouse X axis
+			
+      rc_ctrl[TEMP].rc.rocker_r_ -= RC_CH_VALUE_OFFSET;
+      rc_ctrl[TEMP].rc.rocker_r1 -= RC_CH_VALUE_OFFSET;
+      rc_ctrl[TEMP].rc.rocker_l_ -= RC_CH_VALUE_OFFSET;
+      rc_ctrl[TEMP].rc.rocker_l1 -= RC_CH_VALUE_OFFSET;
     }
     // 接收下DM传来的遥控器数据
     if (rx_header.StdId == 0x34) 
@@ -104,7 +106,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
     }
 		
 //		    // 云台PITCH电机信息接收
-    if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
+    if (rx_header.StdId == 0x205) // 判断标识符，标识符为0x204+ID
     {
       gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
       gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
@@ -143,14 +145,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
         can_cnt_1++;
       }
     }
-    // 云台PITCH电机信息接收
-//    if (rx_header.StdId == 0x20b) // 判断标识符，标识符为0x204+ID
-//    {
-//      gimbal_Pitch.motor_info.rotor_angle = ((rx_data[0] << 8) | rx_data[1]);
-//      gimbal_Pitch.motor_info.rotor_speed = ((rx_data[2] << 8) | rx_data[3]);
-//      gimbal_Pitch.motor_info.torque_current = ((rx_data[4] << 8) | rx_data[5]);
-//      gimbal_Pitch.motor_info.temp = rx_data[6];
-//    }
 
 		//超级电容信息接收
     if (rx_header.StdId == 0x211)

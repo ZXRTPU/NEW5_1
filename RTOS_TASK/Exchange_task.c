@@ -38,7 +38,7 @@ void Exchange_task(void const * argument)
 	
 	vision_recv_data = VisionInit(&config);
 	
-	rc_data = RemoteControlInit(&huart3); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
+	//rc_data = RemoteControlInit(&huart3); // 修改为对应串口,注意如果是自研板dbus协议串口需选用添加了反相器的那个
 
   video_data = VideoTransmitterControlInit(&huart6); // 修改为对应串口
 

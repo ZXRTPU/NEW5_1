@@ -64,7 +64,7 @@ static void VideoDataContorl()
  * @brief 图传数据解析函数
  *
  * @param buff 图传数据
- */
+ */ 
 static void VideoRead(uint8_t *buff)
 {
     uint16_t judge_length; // 统计一帧数据长度
@@ -94,12 +94,8 @@ static void VideoRead(uint8_t *buff)
                     break;
                 case ID_remote_control_data: // 图传链路键鼠数据
                     memcpy(&video_ctrl[TEMP].key_data, (buff + DATA_Offset), LEN_remote_control_data);
-//                    *(uint16_t *)&video_ctrl[TEMP].key[KEY_PRESS] = video_ctrl[TEMP].key_data.keyboard_value;
-//                    VideoDataContorl();
-//                    can_remote(buff + DATA_Offset, 0x311,8);
-//                    can_remote(buff + DATA_Offset + 8, 0x312,2);
-								    
-								    if (!rc_ctrl[TEMP].rc.switch_right)
+
+                    if (!rc_ctrl[TEMP].rc.switch_left)
                     {
                         // 发送给下C板
                         memcpy(send_buff, buff + DATA_Offset, 8);
