@@ -108,20 +108,19 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
     uint8_t rx_data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data); // receive can2 data
     
-    if (rx_header.StdId == 0x55) // 接收下C板传来的IMU数据
-    {
-      Yaw_top = (int16_t)((rx_data[0] << 8) | rx_data[1]);   // yaw
-      // INS_bottom.Roll = (int16_t)((rx_data[2] << 8) | rx_data[3]);  // roll（roll和pitch根据c放置位置不同可能交换）
-      // INS_bottom.Pitch = (int16_t)((rx_data[4] << 8) | rx_data[5]); // pitch
-    }
+    // if (rx_header.StdId == 0x55) // 接收下C板传来的IMU数据
+    // {
+    //   Yaw_top = (int16_t)((rx_data[0] << 8) | rx_data[1]);   // yaw
+    //   // INS_bottom.Roll = (int16_t)((rx_data[2] << 8) | rx_data[3]);  // roll（roll和pitch根据c放置位置不同可能交换）
+    //   // INS_bottom.Pitch = (int16_t)((rx_data[4] << 8) | rx_data[5]); // pitch
+    // }
 
-  if (rx_header.StdId == 0x35)                                   // 上C向下C传IMU数据
+    if (rx_header.StdId == 0x35)                                   // 上C向下C传IMU数据
     {
             // rc_ctrl.rc.ch[4] = ((rx_data[0] | (rx_data[1] << 8)) & 0x07ff) - RC_CH_VALUE_OFFSET;
 
           yy = (((rx_data[0] << 8) | rx_data[1])); // yaw
           Yaw_top = yy / 100.0f;
-
     }
 
     if (rx_header.StdId == 0x36) // 接收上C传来的图传数据
@@ -145,7 +144,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
   }
 }
 
-void can_remote(uint8_t sbus_buf[], uint8_t can_send_id) // 调用can来发送遥控器数据
+//******************************************* 调用can来传输数据 *******************************************************
+void can_remote(uint8_t sbus_buf[], uint8_t can_send_id) 
 {
   CAN_TxHeaderTypeDef tx_header;
 
@@ -157,6 +157,23 @@ void can_remote(uint8_t sbus_buf[], uint8_t can_send_id) // 调用can来发送�
    HAL_CAN_AddTxMessage(&hcan1, &tx_header, sbus_buf, (uint32_t *)CAN_TX_MAILBOX0);
 }
 
+//******************************************** 调用can来传输超级电容数据 *******************************************************
+// void can_remote(uint8_t tx_buff[], CAN_HandleTypeDef *_can_ins, uint32_t can_send_id, uint32_t len) // 调用can来发送遥控器数据
+// {
+// CAN_TxHeaderTypeDef tx_header;
+
+// tx_header.StdId = can_send_id;                         // 如果id_range==0则等于0x1ff,id_range==1则等于0x2ff（ID号）
+// tx_header.IDE = CAN_ID_STD;                            // 标准帧
+// tx_header.RTR = CAN_RTR_DATA;                          // 数据帧
+// tx_header.DLC = len;                                   // 发送数据长度（字节）
+// while (HAL_CAN_GetTxMailboxesFreeLevel(_can_ins) == 0) // 等待邮箱空闲
+// {
+// }
+// HAL_CAN_AddTxMessage(_can_ins, &tx_header, tx_buff, (uint32_t *)CAN_TX_MAILBOX0);
+// }
+
+
+//******************************************** 调用can来控制电机 *******************************************************、
 // 底盤電機控制
 void set_motor_current_chassis(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4)
 {
