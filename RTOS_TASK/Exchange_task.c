@@ -9,13 +9,20 @@
 #include "remote_control.h"
 #include "VideoTransmitter.h"
 
+#define SEND_PITCH_ANGLE 0.54
+
 extern INS_t INS;
+extern gimbal_t gimbal_Pitch;
 
 static Vision_Recv_s *vision_recv_data;
 static RC_ctrl_t *rc_data;       // 遥控器数据,初始化时返回的指针
 static Video_ctrl_t *video_data; // 图传数据,初始化时返回的指针
+float send_vision_pitch;
 
 ins_data_t ins_data;
+
+uint8_t temp_remote[8];
+float yaw = 0;
 
 void Exchange_task(void const * argument)
 {
@@ -45,8 +52,14 @@ void Exchange_task(void const * argument)
 
 	while (1)
 	{
-      VisionSetAltitude(INS.Yaw, INS.Roll, INS.Pitch); // 此处C板由于放置位置的关系， Roll 和 Pitch 对调
+		  send_vision_pitch = (gimbal_Pitch.motor_info.rotor_angle / 8192.0) * 360 * SEND_PITCH_ANGLE;
+      VisionSetAltitude(INS.Yaw, send_vision_pitch, INS.Pitch); // 此处C板由于放置位置的关系， Roll 和 Pitch 对调
       VisionSend();
+		
+		  yaw = 100 * INS.Yaw;
+	    temp_remote[0] = ((int16_t)yaw >> 8) & 0xff;
+	    temp_remote[1] = (int16_t)yaw & 0xff;
+      can_remote(temp_remote, 0x35,8);
 
       osDelay(1);
 	}

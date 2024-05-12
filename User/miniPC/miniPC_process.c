@@ -5,10 +5,12 @@
 #include "bsp_usb.h"
 #include "crc_ref.h"
 #include "struct_typedef.h"
+#include "ins_task.h"
 
 float vision_yaw = 0;
 float vision_pitch = 0;
 int32_t vision_is_tracking = 0;
+extern INS_t INS;
 
 static Vision_Instance *vision_instance;       // 用于和视觉通信的串口实例
 static Daemon_Instance *vision_daemon_instance; // 用于判断视觉通信是否离线

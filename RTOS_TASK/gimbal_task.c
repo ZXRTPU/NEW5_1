@@ -9,12 +9,19 @@
 #define MAX_SPEED 200
 #define MAX_ANGLE 1600//3400
 #define MIN_ANGLE -720//1400//平的700
+#define RECV_PITCH_ANGLE 1.84
+
+//1405~0 8192~7550  90 6020电机
+//17~-32  49 实际转过角度值
+
 
 extern INS_t INS;
 extern float vision_yaw;
 extern float vision_pitch;
 extern int32_t vision_is_tracking;
 extern Video_ctrl_t video_ctrl[2]; // 图传信息结构体
+
+float recv_vision_pitch;
 
 gimbal_t gimbal_Yaw, gimbal_Pitch; // 云台电机信息结构体
 
@@ -89,9 +96,9 @@ static void mode_select()
 		// 遥控+键鼠链路
 		if (rc_ctrl[TEMP].rc.switch_right)
 		{
-			// 视觉控制 - 右杆上拨 或 鼠标右键按下
+			// 视觉控制 - 右杆居中 或 鼠标右键按下
       //if (rc_ctrl[TEMP].rc.switch_right == 3 || rc_ctrl[TEMP].mouse.press_r == 1) // 右拨杆中 || 按住右键
-			if (rc_ctrl[TEMP].mouse.press_r == 1) 
+			if (rc_ctrl[TEMP].mouse.press_r == 3 || rc_ctrl[TEMP].rc.switch_right==3) 
 			{
 				gimbal_vision_mode();
 			}
@@ -134,7 +141,7 @@ static void gimbal_current_give()
     if (switch_is_up(rc_ctrl[TEMP].rc.switch_right) || rc_ctrl[TEMP].mouse.press_r || video_ctrl[TEMP].key_data.right_button_down)
 	  {
         if (vision_is_tracking)
-            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
+            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid_vision, 57.3F * INS.Gyro[1], gimbal_Pitch.speed_target);
         else
             gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
@@ -142,7 +149,7 @@ static void gimbal_current_give()
     {
         gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
-	  //set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
+	  set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
 }
 
 //视觉控制云台模式
@@ -229,7 +236,6 @@ static void yaw_lock_mode()
 
 		detel_calc(&gimbal_Yaw.angle_target);
 		gimbal_Yaw.speed_target = gimbal_Yaw_PID_calc(&gimbal_Yaw.pid_angle, INS.yaw_update, gimbal_Yaw.angle_target);
-
 }
 
 static void pitch_vision_mode()
@@ -244,7 +250,11 @@ static void pitch_vision_mode()
              {
                  // 视觉模式下的手动微调
                  float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
-                 gimbal_Pitch.angle_target = vision_pitch + normalized_input;
+							 
+							   //视觉数据映射
+							   recv_vision_pitch = vision_pitch*RECV_PITCH_ANGLE;
+							   
+                 gimbal_Pitch.angle_target = recv_vision_pitch + normalized_input;
              }
              else
              {
@@ -272,7 +282,11 @@ static void pitch_vision_mode()
              {
                 // 视觉模式下的手动微调
                 float normalized_input = (video_ctrl[TEMP].key_data.mouse_y / 16384.0f) * 100.0f;
-                gimbal_Pitch.angle_target = vision_pitch + normalized_input;
+							 
+							  //视觉数据映射
+							  recv_vision_pitch = vision_pitch*RECV_PITCH_ANGLE;
+							 
+                gimbal_Pitch.angle_target = recv_vision_pitch + normalized_input;
              }
           }
 
