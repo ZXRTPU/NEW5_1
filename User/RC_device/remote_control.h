@@ -25,7 +25,7 @@
 
 // 获取按键操作
 #define KEY_PRESS 0
-#define KEY_STATE 1
+#define KEY_STATE 1    
 #define KEY_PRESS_WITH_CTRL 1
 #define KEY_PRESS_WITH_SHIFT 2
 
@@ -62,6 +62,7 @@
 #define Key_V 14
 #define Key_B 15
 
+
 /* ----------------------- Data Struct ------------------------------------- */
 // 待测试的位域结构体,可以极大提升解析速度
 typedef union
@@ -86,6 +87,10 @@ typedef union
         uint16_t b : 1;
     };
     uint16_t keys; // 用于memcpy而不需要进行强制类型转换
+		
+		//video_ctrl[TEMP].key_count[KEY_PRESS][Key_F]
+		//video_ctrl[TEMPV].key[V_KEY_PRESS].d
+		
 } Key_t;
 
 // @todo 当前结构体嵌套过深,需要进行优化

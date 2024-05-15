@@ -70,23 +70,23 @@ void Gimbal_task(void const *pvParameters)
 static void Gimbal_loop_Init()
 {
     // 初始化pid参数
-    gimbal_Yaw.pid_parameter[0] = 60, gimbal_Yaw.pid_parameter[1] = 0.5, gimbal_Yaw.pid_parameter[2] = 5;
-    gimbal_Yaw.pid_angle_parameter[0] = 6, gimbal_Yaw.pid_angle_parameter[1] = 0, gimbal_Yaw.pid_angle_parameter[2] = 10;
+    gimbal_Yaw.pid_parameter[0] = 200, gimbal_Yaw.pid_parameter[1] = 5, gimbal_Yaw.pid_parameter[2] = 0;
+    gimbal_Yaw.pid_angle_parameter[0] = 5, gimbal_Yaw.pid_angle_parameter[1] = 0, gimbal_Yaw.pid_angle_parameter[2] = 20;
     gimbal_Yaw.pid_vision_parameter[0] = 6, gimbal_Yaw.pid_vision_parameter[1] = 0, gimbal_Yaw.pid_vision_parameter[2] = 10;
 	  gimbal_Yaw.angle_target = 0;
 
-    gimbal_Pitch.pid_parameter[0] = 60, gimbal_Pitch.pid_parameter[1] = 0, gimbal_Pitch.pid_parameter[2] = 10;
-    gimbal_Pitch.pid_angle_parameter[0] = 1, gimbal_Pitch.pid_angle_parameter[1] = 0, gimbal_Pitch.pid_angle_parameter[2] = 0;
-    gimbal_Pitch.pid_vision_parameter[0] = 3, gimbal_Pitch.pid_vision_parameter[1] = 0, gimbal_Pitch.pid_vision_parameter[2] = 0;
+    gimbal_Pitch.pid_parameter[0] = 30, gimbal_Pitch.pid_parameter[1] = 0.1, gimbal_Pitch.pid_parameter[2] = 0;
+    gimbal_Pitch.pid_angle_parameter[0] = 5, gimbal_Pitch.pid_angle_parameter[1] = 0, gimbal_Pitch.pid_angle_parameter[2] = 0.1;
+    gimbal_Pitch.pid_vision_parameter[0] = 5, gimbal_Pitch.pid_vision_parameter[1] = 0, gimbal_Pitch.pid_vision_parameter[2] = 0.1;
 	  gimbal_Pitch.angle_target = 700;
 
     // 初始化pid结构体
-    pid_init(&gimbal_Yaw.pid, gimbal_Yaw.pid_parameter, 15000, 15000);
+    pid_init(&gimbal_Yaw.pid, gimbal_Yaw.pid_parameter, 30000, 30000);
     pid_init(&gimbal_Yaw.pid_angle, gimbal_Yaw.pid_angle_parameter, 15000, 15000);
 	  pid_init(&gimbal_Yaw.pid_vision, gimbal_Yaw.pid_vision_parameter, 15000, 15000);
 
-    pid_init(&gimbal_Pitch.pid, gimbal_Pitch.pid_parameter, 15000, 15000);
-    pid_init(&gimbal_Pitch.pid_angle, gimbal_Pitch.pid_angle_parameter, 1000, 1000);
+    pid_init(&gimbal_Pitch.pid, gimbal_Pitch.pid_parameter, 30000, 30000);
+    pid_init(&gimbal_Pitch.pid_angle, gimbal_Pitch.pid_angle_parameter, 10000, 1000);
 	  pid_init(&gimbal_Pitch.pid_vision, gimbal_Pitch.pid_vision_parameter, 1000, 1000);
 }
 
@@ -132,6 +132,7 @@ static void gimbal_current_give()
 {   
 	  //yaw轴电机电流发送
     gimbal_Yaw.motor_info.set_current = pid_calc(&gimbal_Yaw.pid, 57.3F * INS.Gyro[2], gimbal_Yaw.speed_target); // 57.3F * INS.Gyro[2]
+	gimbal_Yaw.motor_info.set_current += 0.8*gimbal_Yaw.motor_info.torque_current;
     set_motor_current_gimbal(1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
 	  
 	  osDelay(1);
@@ -149,7 +150,7 @@ static void gimbal_current_give()
     {
         gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
-	  set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
+	  //set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
 }
 
 //视觉控制云台模式
