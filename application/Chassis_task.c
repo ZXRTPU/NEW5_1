@@ -18,8 +18,8 @@
 
 #define RC_MAX 660
 #define RC_MIN -660
-#define motor_max 4000
-#define motor_min -4000
+#define motor_max 20000
+#define motor_min -20000
 #define angle_valve 5
 #define angle_weight 55
 #define CHASSIS_MAX_SPEED 8000
@@ -145,7 +145,7 @@ void Chassis_task(void const *pvParameters)
     chassis_motol_speed_calculate();
 
     // 电机电流控制
-    Motor_Speed_limiting(chassis.speed_target,motor_max);
+    //Motor_Speed_limiting(chassis.speed_target,motor_max);
 
     chassis_current_give();
     // imu_task();
@@ -255,6 +255,12 @@ static void mode_choose()
       // 底盘模式读取
       read_keyboard_video();
       key_control_video();
+
+      /*测试程序：确定可以接收到图传数据后注释*/
+      // if(video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_G]%2==1)
+      // {
+      //   gyroscope();
+      // }
 
       switch (chassis_mode)
       {
@@ -431,24 +437,24 @@ static void key_control_rc(void)
 static void key_control_video()
 {
     if (video_ctrl[TEMPV].key[V_KEY_PRESS].d)
-      key_x_fast += KEY_START_OFFSET;
-    else
-      key_x_fast -= KEY_STOP_OFFSET;
-
-    if (video_ctrl[TEMPV].key[V_KEY_PRESS].a)
-      key_x_slow += KEY_START_OFFSET;
-    else
-      key_x_slow -= KEY_STOP_OFFSET;
-
-    if (video_ctrl[TEMPV].key[V_KEY_PRESS].w)
       key_y_fast += KEY_START_OFFSET;
     else
       key_y_fast -= KEY_STOP_OFFSET;
 
-    if (video_ctrl[TEMPV].key[V_KEY_PRESS].s)
+    if (video_ctrl[TEMPV].key[V_KEY_PRESS].a)
       key_y_slow += KEY_START_OFFSET;
     else
       key_y_slow -= KEY_STOP_OFFSET;
+
+    if (video_ctrl[TEMPV].key[V_KEY_PRESS].w)
+      key_x_fast += KEY_START_OFFSET;
+    else
+      key_x_fast -= KEY_STOP_OFFSET;
+
+    if (video_ctrl[TEMPV].key[V_KEY_PRESS].s)
+      key_x_slow += KEY_START_OFFSET;
+    else
+      key_x_slow -= KEY_STOP_OFFSET;
 
     // 正转
     if (video_ctrl[TEMPV].key[V_KEY_PRESS].shift)
@@ -707,8 +713,8 @@ static int16_t map_range(int value, int from_min, int from_max, int to_min, int 
 static void RC_Move(void)
 {
   // 从遥控器获取控制输入
-  chassis.Vx = rc_ctrl.rc.ch[3]; // 前后输入
-  chassis.Vy = rc_ctrl.rc.ch[2]; // 左右输入
+  chassis.Vx = rc_ctrl.rc.ch[3]*5; // 前后输入
+  chassis.Vy = rc_ctrl.rc.ch[2]*5; // 左右输入
   chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
 
   /*************记得加上线性映射***************/
