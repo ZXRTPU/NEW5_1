@@ -345,6 +345,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>shooter,0x0A</ItemText>
         </Ww>
+        <Ww>
+          <count>36</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>gimbal_Pitch</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>
@@ -391,6 +396,16 @@
           <count>8</count>
           <WinNumber>2</WinNumber>
           <ItemText>gimbal_Pitch.pid</ItemText>
+        </Ww>
+        <Ww>
+          <count>9</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>gimbal_Pitch,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>10</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>shooter,0x0A</ItemText>
         </Ww>
       </WatchWindow2>
       <Tracepoint>
@@ -1979,7 +1994,7 @@
 
   <Group>
     <GroupName>User/RC_device</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -2035,7 +2050,7 @@
 
   <Group>
     <GroupName>User/VideoTransmitter</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>

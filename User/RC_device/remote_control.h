@@ -90,7 +90,7 @@ typedef union
 		
 		//video_ctrl[TEMP].key_count[KEY_PRESS][Key_F]
 		//video_ctrl[TEMPV].key[V_KEY_PRESS].d
-		
+ 		
 } Key_t;
 
 // @todo 当前结构体嵌套过深,需要进行优化

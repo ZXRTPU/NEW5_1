@@ -7,14 +7,13 @@
 #include "VideoTransmitter.h"
 #include "user_lib.h"
 #define MAX_SPEED 200
-#define MAX_ANGLE 1600//3400
-#define MIN_ANGLE -720//1400//平的700
+#define MAX_ANGLE 3900
+#define MIN_ANGLE 2200
 #define RECV_PITCH_ANGLE 1.84
 
 //1405~0 8192~7550  90 6020电机
 //17~-32  49 实际转过角度值
-
-
+     
 extern INS_t INS;
 extern float vision_yaw;
 extern float vision_pitch;
@@ -24,11 +23,11 @@ extern Video_ctrl_t video_ctrl[2]; // 图传信息结构体
 float recv_vision_pitch;
 
 gimbal_t gimbal_Yaw, gimbal_Pitch; // 云台电机信息结构体
-
+   
 static uint8_t Update_yaw_flag = 1;
 static float imu_err_yaw = 0; // 记录yaw飘移的数值便于进行校正
 
-extern RC_ctrl_t rc_ctrl[2]; // 遥控器信息结构体
+extern RC_ctrl_t rc_ctrl[2]; // 遥控器信息结构体   
 
 // 云台电机的初始化
 static void Gimbal_loop_Init();
@@ -70,7 +69,7 @@ void Gimbal_task(void const *pvParameters)
 static void Gimbal_loop_Init()
 {
     // 初始化pid参数
-    gimbal_Yaw.pid_parameter[0] = 200, gimbal_Yaw.pid_parameter[1] = 5, gimbal_Yaw.pid_parameter[2] = 0;
+    gimbal_Yaw.pid_parameter[0] = 80, gimbal_Yaw.pid_parameter[1] = 5, gimbal_Yaw.pid_parameter[2] = 0;
     gimbal_Yaw.pid_angle_parameter[0] = 5, gimbal_Yaw.pid_angle_parameter[1] = 0, gimbal_Yaw.pid_angle_parameter[2] = 20;
     gimbal_Yaw.pid_vision_parameter[0] = 6, gimbal_Yaw.pid_vision_parameter[1] = 0, gimbal_Yaw.pid_vision_parameter[2] = 10;
 	  gimbal_Yaw.angle_target = 0;
@@ -78,8 +77,8 @@ static void Gimbal_loop_Init()
     gimbal_Pitch.pid_parameter[0] = 30, gimbal_Pitch.pid_parameter[1] = 0.1, gimbal_Pitch.pid_parameter[2] = 0;
     gimbal_Pitch.pid_angle_parameter[0] = 5, gimbal_Pitch.pid_angle_parameter[1] = 0, gimbal_Pitch.pid_angle_parameter[2] = 0.1;
     gimbal_Pitch.pid_vision_parameter[0] = 5, gimbal_Pitch.pid_vision_parameter[1] = 0, gimbal_Pitch.pid_vision_parameter[2] = 0.1;
-	  gimbal_Pitch.angle_target = 700;
-
+	  gimbal_Pitch.angle_target = 3234;
+  
     // 初始化pid结构体
     pid_init(&gimbal_Yaw.pid, gimbal_Yaw.pid_parameter, 30000, 30000);
     pid_init(&gimbal_Yaw.pid_angle, gimbal_Yaw.pid_angle_parameter, 15000, 15000);
@@ -132,7 +131,7 @@ static void gimbal_current_give()
 {   
 	  //yaw轴电机电流发送
     gimbal_Yaw.motor_info.set_current = pid_calc(&gimbal_Yaw.pid, 57.3F * INS.Gyro[2], gimbal_Yaw.speed_target); // 57.3F * INS.Gyro[2]
-	gimbal_Yaw.motor_info.set_current += 0.8*gimbal_Yaw.motor_info.torque_current;
+	  gimbal_Yaw.motor_info.set_current += 0.8*gimbal_Yaw.motor_info.torque_current;
     set_motor_current_gimbal(1, gimbal_Yaw.motor_info.set_current, 0, 0, 0);
 	  
 	  osDelay(1);
@@ -150,7 +149,7 @@ static void gimbal_current_give()
     {
         gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
-	  //set_motor_current_gimbal(0, gimbal_Pitch.motor_info.set_current, 0, 0, 0);
+	  set_motor_current_gimbal(0,  gimbal_Pitch.motor_info.set_current, 0, 0, 0);
 }
 
 //视觉控制云台模式
@@ -300,7 +299,7 @@ static void pitch_vision_mode()
       }
 
       detel_calc2(&gimbal_Pitch.angle_target);
-      gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_angle, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
+      gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
 }
 
 static void pitch_rc_mode()
@@ -318,8 +317,8 @@ static void pitch_rc_mode()
 		else
 		{
 			// 使用非线性映射函数调整灵敏度
-			float normalized_input = video_ctrl[TEMP].key_data.mouse_x / 16384.0f * 50;
-			gimbal_Yaw.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
+			float normalized_input = video_ctrl[TEMP].key_data.mouse_y / 16384.0f * 50;
+			gimbal_Pitch.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 2.0;
 		}
 
      detel_calc2(&gimbal_Pitch.angle_target);
@@ -341,17 +340,17 @@ static void detel_calc(fp32 *angle)
 
 static void detel_calc2(fp32 *angle)
 {
-    if (*angle > 4096)
-        *angle -= 8192;
+//    if (*angle > 4096)
+//        *angle -= 8192;
 
-    else if (*angle < -4096)
-         *angle += 8192;
+//    else if (*angle < -4096)
+//         *angle += 8192;
 
-//    if (*angle >= MAX_ANGLE)
-//        *angle = MAX_ANGLE;
+    if (*angle >= MAX_ANGLE)
+        *angle = MAX_ANGLE;
 
-//    else if (*angle <= MIN_ANGLE)
-//        *angle = MIN_ANGLE;
+    else if (*angle <= MIN_ANGLE)
+        *angle = MIN_ANGLE;
 }
 
 

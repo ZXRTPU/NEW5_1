@@ -73,36 +73,16 @@ static void Shooter_Inint(void)
 // 模式选择
 static void model_choice(void)
 {
-    // 取消注释开始发射
+    //
+	
     bay_control();
-    // 取消注释开始发射
+
     if (rc_ctrl[TEMP].rc.switch_left == 3 || rc_ctrl[TEMP].rc.switch_left == 1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_F]%2 == 1)
     {
         // 发射摩擦轮- F键
         friction_control();
         
-			  //拨盘电机 - E键
-			  //单发
-        if (rc_ctrl[TEMP].rc.switch_right == 3 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_E] % 3 == 1)
-        {
-            if (flag_single)
-            {
-                trigger_single_angle_move();
-							  is_angle_control = true;
-                flag_single=0;
-            }
-        }
-				//左杆上，连发
-        else if (rc_ctrl[TEMP].rc.switch_left ==1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_E] % 3 == 2)
-        {
-            shooter.dial_speed_target = 2000;
-            is_angle_control = false;
-        }
-				//单发重置
-        else if (rc_ctrl[TEMP].rc.switch_right == 2)
-        {
-            flag_single=1;
-        }
+        dial_control();
     }
 		
     else
@@ -120,9 +100,39 @@ static void model_choice(void)
 // 摩擦轮电机控制
 static void friction_control(void)
 {
-
     shooter.friction_speed_target[0] = -8000;
     shooter.friction_speed_target[1] = 8000;
+}
+
+// 拨盘电机控制
+static void dial_control()
+{
+		//拨盘电机 - E键
+	  //单发
+    if (rc_ctrl[TEMP].rc.switch_right == 3 || video_ctrl[TEMP].key[KEY_PRESS].e)
+    {
+       if (flag_single)
+       {
+          trigger_single_angle_move();
+					is_angle_control = true;
+          //flag_single=0;
+       }
+    }
+		//左杆上，连发
+    else if (rc_ctrl[TEMP].rc.switch_left ==1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_R]%2 == 1)
+    {
+        shooter.dial_speed_target = 2000;
+        is_angle_control = false;
+    }
+		//单发重置
+    //else if (rc_ctrl[TEMP].rc.switch_right == 2 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_Q])
+    else
+		{
+       //flag_single=1;
+			 is_angle_control = false;
+			 if (!is_angle_control)
+          shooter.dial_speed_target= 0;
+    }
 }
 
 // 弹舱电机控制
