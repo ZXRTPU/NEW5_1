@@ -69,8 +69,8 @@ void Gimbal_task(void const *pvParameters)
 static void Gimbal_loop_Init()
 {
     // 初始化pid参数
-    gimbal_Yaw.pid_parameter[0] = 80, gimbal_Yaw.pid_parameter[1] = 5, gimbal_Yaw.pid_parameter[2] = 0;
-    gimbal_Yaw.pid_angle_parameter[0] = 5, gimbal_Yaw.pid_angle_parameter[1] = 0, gimbal_Yaw.pid_angle_parameter[2] = 20;
+    gimbal_Yaw.pid_parameter[0] = 60, gimbal_Yaw.pid_parameter[1] = 0.5, gimbal_Yaw.pid_parameter[2] = 5;
+    gimbal_Yaw.pid_angle_parameter[0] = 6, gimbal_Yaw.pid_angle_parameter[1] = 0, gimbal_Yaw.pid_angle_parameter[2] = 10;
     gimbal_Yaw.pid_vision_parameter[0] = 6, gimbal_Yaw.pid_vision_parameter[1] = 0, gimbal_Yaw.pid_vision_parameter[2] = 10;
 	  gimbal_Yaw.angle_target = 0;
 
@@ -157,7 +157,7 @@ static void gimbal_vision_mode()
 {
 	yaw_vision_mode();
   pitch_vision_mode();
-}
+}  
 
 //锁云台模式
 static void gimbal_lock_mode()
@@ -318,7 +318,7 @@ static void pitch_rc_mode()
 		{
 			// 使用非线性映射函数调整灵敏度
 			float normalized_input = video_ctrl[TEMP].key_data.mouse_y / 16384.0f * 50;
-			gimbal_Pitch.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 2.0;
+			gimbal_Pitch.angle_target += pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 2.0;
 		}
 
      detel_calc2(&gimbal_Pitch.angle_target);

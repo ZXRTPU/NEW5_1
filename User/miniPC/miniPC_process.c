@@ -7,9 +7,11 @@
 #include "struct_typedef.h"
 #include "ins_task.h"
 
+//接收视觉发送的数据
 float vision_yaw = 0;
 float vision_pitch = 0;
 int32_t vision_is_tracking = 0;
+
 extern INS_t INS;
 
 static Vision_Instance *vision_instance;       // 用于和视觉通信的串口实例

@@ -73,20 +73,24 @@ static void Shooter_Inint(void)
 // 模式选择
 static void model_choice(void)
 {
-    //
-	
+    //弹仓电机
     bay_control();
 
     if (rc_ctrl[TEMP].rc.switch_left == 3 || rc_ctrl[TEMP].rc.switch_left == 1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_F]%2 == 1)
     {
         // 发射摩擦轮- F键
         friction_control();
+			
+			  friction_flag = 1;
         
+			  //拨盘电机 - E键为单发 R键为连发
         dial_control();
     }
 		
     else
     {
+			  friction_flag = 0;
+			
         shooter.dial_speed_target = 0;
         shooter.motor_info[0].set_current=0;
         shooter.bay_speed_target = 0;
@@ -100,14 +104,14 @@ static void model_choice(void)
 // 摩擦轮电机控制
 static void friction_control(void)
 {
-    shooter.friction_speed_target[0] = -8000;
-    shooter.friction_speed_target[1] = 8000;
+    shooter.friction_speed_target[0] = -6900;
+    shooter.friction_speed_target[1] = 6900;
 }
 
 // 拨盘电机控制
 static void dial_control()
 {
-		//拨盘电机 - E键
+		//拨盘电机
 	  //单发
     if (rc_ctrl[TEMP].rc.switch_right == 3 || video_ctrl[TEMP].key[KEY_PRESS].e)
     {
@@ -118,10 +122,10 @@ static void dial_control()
           //flag_single=0;
        }
     }
-		//左杆上，连发
-    else if (rc_ctrl[TEMP].rc.switch_left ==1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_R]%2 == 1)
+		//连发
+    else if (rc_ctrl[TEMP].rc.switch_left ==1 || video_ctrl[TEMP].key_count[KEY_PRESS][Key_R]%2 == 1 || video_ctrl[TEMP].key_data.left_button_down == 1)
     {
-        shooter.dial_speed_target = 2000;
+        shooter.dial_speed_target = 2100;
         is_angle_control = false;
     }
 		//单发重置
@@ -138,8 +142,10 @@ static void dial_control()
 // 弹舱电机控制
 static void bay_control(void)
 {
-    // 暂留
-    shooter.bay_speed_target = 0;
+    if (!friction_flag && video_ctrl[TEMP].key_count[KEY_PRESS][Key_Q]%2 == 1) // 摩擦轮电机停转或者发射
+        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 500);               // 500 开
+    else
+        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 2100); // 2100 关
 }
 
 // 给电流
