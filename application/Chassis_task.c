@@ -145,7 +145,7 @@ void Chassis_task(void const *pvParameters)
     chassis_motol_speed_calculate();
 
     // 电机电流控制
-    //Motor_Speed_limiting(chassis.speed_target,motor_max);
+    Motor_Speed_limiting(chassis.speed_target,motor_max);
 
     chassis_current_give();
     // imu_task();
@@ -312,13 +312,12 @@ static void read_keyboard_rc(void)
 //键盘控制
 static void read_keyboard_video(void)
 {
-    // 底盘模式
-    if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2 == 1)
+    if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2 == 0)
          chassis_mode = 1; // rc
-    else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_X] % 2 == 1)
+    else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2 == 1)
          chassis_mode = 2; // follow
-    else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 2 == 1)
-         chassis_mode = 3; // gyro
+    // else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 2 == 1)
+    //      chassis_mode = 3; // gyro
     else
          chassis_mode = 4; // stop
 
@@ -708,13 +707,13 @@ static int16_t map_range(int value, int from_min, int from_max, int to_min, int 
   int16_t mapped_value = (int16_t)(normalized_value * (to_max - to_min) + to_min);
 
   return mapped_value;
-}
+} 
 
 static void RC_Move(void)
 {
   // 从遥控器获取控制输入
-  chassis.Vx = rc_ctrl.rc.ch[3]*5; // 前后输入
-  chassis.Vy = rc_ctrl.rc.ch[2]*5; // 左右输入
+  chassis.Vx = rc_ctrl.rc.ch[3]*3; // 前后输入n     
+  chassis.Vy = rc_ctrl.rc.ch[2]*3; // 左右输入
   chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
 
   /*************记得加上线性映射***************/
@@ -722,24 +721,41 @@ static void RC_Move(void)
   chassis.Vy = - map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
   chassis.Wz = map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
 
-//       // relative_yaw = (yaw12 - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
-// relative_yaw = (Yaw_update - Yaw_top) / 57.3f;
-//     int16_t temp_Vx = 0;
-//   int16_t temp_Vy = 0;
-//   //  temp_Vx = chassis.Vx * cosf(0) - chassis.Vy * sinf(0);
-//   // temp_Vy = chassis.Vx * sinf(0) + chassis.Vy * cosf(0);
-//   temp_Vx = chassis.Vx * cosf(relative_yaw) - chassis.Vy * sinf(relative_yaw);
-//   temp_Vy = chassis.Vx * sinf(relative_yaw) + chassis.Vy * cosf(relative_yaw);
-//   chassis.Vx = temp_Vx;
-//   chassis.Vy = temp_Vy;
+  relative_yaw = (Yaw_update - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
 
-    cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
+  // if (relative_yaw > -5 && relative_yaw < 5)
+  // {
+  //   chassis.Wz = 0;
+  // }
+  // else
+  // {
+  //   detel_calc(&relative_yaw);
+  //   chassis.Wz = -relative_yaw*160;
+  //   // chassis.Wz = pid_calc(&pid_yaw_speed, yaw_speed, rotate_w);
+
+  //   if(chassis.Wz > 2 * chassis_wz_max)
+  //   chassis.Wz =2 * chassis_wz_max;
+  //   if(chassis.Wz < -2 * chassis_wz_max)
+  //   chassis.Wz = -2 * chassis_wz_max;
+  // }
+
+  int16_t temp_Vx = 0;
+  int16_t temp_Vy = 0;
+  //  temp_Vx = chassis.Vx * cosf(0) - chassis.Vy * sinf(0);
+  // temp_Vy = chassis.Vx * sinf(0) + chassis.Vy * cosf(0);
+  temp_Vx = chassis.Vx * cosf(relative_yaw) - chassis.Vy * sinf(relative_yaw);
+  temp_Vy = chassis.Vx * sinf(relative_yaw) + chassis.Vy * cosf(relative_yaw);
+  chassis.Vx = temp_Vx;
+  chassis.Vy = temp_Vy;
+
+  cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差
+
 
 }
 
 // 小陀螺模式
 static void gyroscope(void)
-{
+{    
   chassis.Wz = 3000;
 
   chassis.Vx = map_range(rc_ctrl.rc.ch[3], RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;

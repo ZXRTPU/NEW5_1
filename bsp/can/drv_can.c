@@ -132,8 +132,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
     {
       memcpy(video_buf + 8, rx_data, 4);
       VideoRead(video_buf);
-      //INS_top.Pitch = (int16_t)((rx_data[4] << 8) | rx_data[5]) / 50.0f;
-      //INS_top.Yaw = (int16_t)((rx_data[6] << 8) | rx_data[7]) / 50.0f;
     }
 
     if (rx_header.StdId == 0x38) // 接收上C传来的图传数据
@@ -170,6 +168,32 @@ void can_remote(uint8_t sbus_buf[], uint8_t can_send_id)
 // {
 // }
 // HAL_CAN_AddTxMessage(_can_ins, &tx_header, tx_buff, (uint32_t *)CAN_TX_MAILBOX0);
+// }
+// 发送电容数据
+// void Send_Cap_Data(CAN_HandleTypeDef *_hcan, float Cap_Vol, float Power_3508, uint8_t state)
+// {
+//   static CAN_TxHeaderTypeDef TX_MSG;
+//   static uint8_t CAN_Send_Data[8];
+//   static uint16_t Cap_Vol_send;
+//   static uint16_t Dipan_W;
+//   uint32_t send_mail_box;
+
+//   Cap_Vol_send = (int16_t)(Cap_Vol * 1000); // 将浮点型*1000，并转化为int16类型
+//   Dipan_W = (int16_t)(Power_3508 * 1000);
+
+//   TX_MSG.StdId = CAN_Transmit_Cap; ////电容发送标识符CAN_Transmit_Cap 0x301  //电容信息发送标识符
+//   TX_MSG.IDE = CAN_ID_STD;
+//   TX_MSG.RTR = CAN_RTR_DATA;
+//   TX_MSG.DLC = 0x05;
+
+//   CAN_Send_Data[0] = (Cap_Vol_send >> 8); ////将Cap_Vol_send的高字节移动到低字节位置
+//   CAN_Send_Data[1] = Cap_Vol_send;
+//   CAN_Send_Data[2] = (Dipan_W >> 8);
+//   CAN_Send_Data[3] = Dipan_W;
+//   CAN_Send_Data[4] = state;
+ 
+
+//   HAL_CAN_AddTxMessage(_hcan, &TX_MSG, CAN_Send_Data, &send_mail_box);
 // }
 
 

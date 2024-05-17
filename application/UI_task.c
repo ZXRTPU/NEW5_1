@@ -150,8 +150,8 @@ void userUI_init(void)
 	//绘制背景元素（图层0，本场比赛不再变动）
     userUI_draw_background();
 	
-	  userUI_draw_constant_power_allowance(0, &graph8, powerdata[1]);
-	  userUI_draw_robot_xtl_mode(0, chassis_mode);
+	userUI_draw_constant_power_allowance(0, &graph8, powerdata[1]);
+	userUI_draw_robot_xtl_mode(0, chassis_mode);
 	
 	
 

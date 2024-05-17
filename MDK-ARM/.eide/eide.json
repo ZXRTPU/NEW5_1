@@ -181,7 +181,6 @@
     "NB": {
       "excludeList": [
         "../moudle/algorithmLayer/pid.c",
-        "../application/super cap.c",
         "../application/JY901.c",
         "../application/imu_task.c",
         "../application/exchange.c",
@@ -189,7 +188,8 @@
         "../moudle/referee/referee_task.c",
         "../moudle/referee/referee_UI.c",
         "../moudle/jy901",
-        "../moudle/referee"
+        "../moudle/referee",
+        "../application/super cap.c"
       ],
       "toolchain": "AC5",
       "compileConfig": {
