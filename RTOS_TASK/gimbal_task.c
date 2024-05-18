@@ -9,6 +9,8 @@
 #define MAX_SPEED 200
 #define MAX_ANGLE 3900
 #define MIN_ANGLE 2200
+#define MAX_ANGLE_VISION 29.2374
+#define MIN_ANGLE_VISION 45.3926
 #define RECV_PITCH_ANGLE 1.84
 
 //1405~0 8192~7550  90 6020电机
@@ -53,6 +55,7 @@ static void Yaw_read_INS();
 
 static void detel_calc(fp32 *angle);
 static void detel_calc2(fp32 *angle);
+static void detel_calc3(fp32 *angle);
 
 void Gimbal_task(void const *pvParameters)
 {
@@ -86,7 +89,7 @@ static void Gimbal_loop_Init()
 
     pid_init(&gimbal_Pitch.pid, gimbal_Pitch.pid_parameter, 30000, 30000);
     pid_init(&gimbal_Pitch.pid_angle, gimbal_Pitch.pid_angle_parameter, 10000, 1000);
-	  pid_init(&gimbal_Pitch.pid_vision, gimbal_Pitch.pid_vision_parameter, 1000, 1000);
+	  pid_init(&gimbal_Pitch.pid_vision, gimbal_Pitch.pid_vision_parameter, 10000, 1000);
 }
 
 // 模式选择
@@ -141,7 +144,7 @@ static void gimbal_current_give()
     if (switch_is_up(rc_ctrl[TEMP].rc.switch_right) || rc_ctrl[TEMP].mouse.press_r || video_ctrl[TEMP].key_data.right_button_down)
 	  {
         if (vision_is_tracking)
-            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid_vision, 57.3F * INS.Gyro[1], gimbal_Pitch.speed_target);
+            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid_vision,gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
         else
             gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
@@ -249,18 +252,24 @@ static void pitch_vision_mode()
              if (vision_is_tracking)
              {
                  // 视觉模式下的手动微调
-                 float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
+                 float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 20.0f;
 							 
-							   //视觉数据映射
-							   recv_vision_pitch = vision_pitch*RECV_PITCH_ANGLE;
+//							   //视觉数据映射
+//							   recv_vision_pitch = vision_pitch*RECV_PITCH_ANGLE;
 							   
-                 gimbal_Pitch.angle_target = recv_vision_pitch + normalized_input;
+                 gimbal_Pitch.angle_target = vision_pitch + normalized_input;
+							 
+							   detel_calc3(&gimbal_Pitch.angle_target);
+                 gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439, gimbal_Pitch.angle_target);
              }
              else
              {
                  // 使用非线性映射函数调整灵敏度
                  float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
                  gimbal_Pitch.angle_target  -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
+							 
+						     detel_calc2(&gimbal_Pitch.angle_target);
+                 gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);							   
              }
           }
           
@@ -269,6 +278,9 @@ static void pitch_vision_mode()
              // 使用非线性映射函数调整灵敏度
              float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
              gimbal_Pitch.angle_target  -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
+						
+						 detel_calc2(&gimbal_Pitch.angle_target);
+             gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
           }
       }
 
@@ -276,30 +288,33 @@ static void pitch_vision_mode()
       else
       {
          // 视觉识别 - 鼠标右键按下
-         if (video_ctrl[TEMP].key_data.right_button_down == 1)
+         if (video_ctrl[TEMP].key_data.right_button_down)
          {
              if (vision_is_tracking)
              {
-                // 视觉模式下的手动微调
-                float normalized_input = (video_ctrl[TEMP].key_data.mouse_y / 16384.0f) * 100.0f;
+                float normalized_input = (video_ctrl[TEMP].key_data.mouse_y / 16384.0f) * 20.0f; 
 							 
-							  //视觉数据映射
-							  recv_vision_pitch = vision_pitch*RECV_PITCH_ANGLE;
+//							//视觉数据映射
+//							recv_vision_pitch = vision_pitch;
 							 
-                gimbal_Pitch.angle_target = recv_vision_pitch + normalized_input;
+                gimbal_Pitch.angle_target = vision_pitch + normalized_input;
+							 
+							  detel_calc3(&gimbal_Pitch.angle_target);
+                gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439, gimbal_Pitch.angle_target);
              }
           }
 
-          else
-          {
-             // 使用非线性映射函数调整灵敏度
-             float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
-             gimbal_Pitch.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
-          }
-      }
+         else
+         {
+            // 使用非线性映射函数调整灵敏度
+            float normalized_input = (rc_ctrl[TEMP].rc.rocker_r1 / 660.0f - rc_ctrl[TEMP].mouse.y / 16384.0f) * 100.0f;
+            gimbal_Pitch.angle_target -= pow(fabs(normalized_input), 0.98) * sign(normalized_input) * 0.3;
+						 
+						detel_calc2(&gimbal_Pitch.angle_target);
+            gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
+         }
+     }
 
-      detel_calc2(&gimbal_Pitch.angle_target);
-      gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision, gimbal_Pitch.motor_info.rotor_angle, gimbal_Pitch.angle_target);
 }
 
 static void pitch_rc_mode()
@@ -351,6 +366,15 @@ static void detel_calc2(fp32 *angle)
 
     else if (*angle <= MIN_ANGLE)
         *angle = MIN_ANGLE;
+}
+
+static void detel_calc3(fp32 *angle)
+{
+	      if (*angle >= MAX_ANGLE_VISION)
+        *angle = MAX_ANGLE_VISION;
+
+    else if (*angle <= -MIN_ANGLE_VISION)
+        *angle = -MIN_ANGLE_VISION;
 }
 
 
