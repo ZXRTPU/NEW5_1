@@ -8,9 +8,11 @@
 #include "math.h"
 #include "arm_math.h"
 #include "struct_typedef.h"
-#include "rm_referee.h"
+//#include "rm_referee.h"
 #include "referee_protocol.h"
 #include "VideoTransmitter.h"
+#include "super_cap.h"
+#include "judge.h"
 
 #define KEY_START_OFFSET 10
 #define KEY_STOP_OFFSET 20
@@ -24,6 +26,9 @@
 #define angle_weight 55
 #define CHASSIS_MAX_SPEED 8000
 
+#define CHASSIS_WZ_MAX_1 4000 // 低速，g键触发
+#define CHASSIS_WZ_MAX_2 6000 // 高速，b键触发
+
 #define CHASSIS_SPEED_MAX_1 5000
 #define CHASSIS_SPEED_MAX_2 5500
 #define CHASSIS_SPEED_MAX_3 6000
@@ -34,43 +39,41 @@
 #define CHASSIS_SPEED_MAX_8 10000
 #define CHASSIS_SPEED_MAX_9 11000
 #define CHASSIS_SPEED_MAX_10 12000
-/// @brief ///这个是用来调试功率限制的//////////////////////////////////
-int16_t chassis_speed_max = 0;//暂时没用到
-/// @brief //////
-int16_t chassis_wz_max = 4000;
-// #define chassis_speed_max 2000
-#define CHASSIS_WZ_MAX_1 4000 // 低速，g键触发
-#define CHASSIS_WZ_MAX_2 6000 // 高速，b键触发
-chassis_t chassis;
+
 extern double yaw12;//下面的yaw
-extern float Yaw1;//新陀螺仪的
+extern double Yaw1;//新陀螺仪的
 extern float Yaw_top ;//float Yaw_top;上面的 yaw
+extern float Hero_chassis_power;
+extern uint16_t Hero_chassis_power_buffer;
+extern uint8_t rx_buffer_c[49];
+extern uint8_t rx_buffer_d[128];
+extern uint8_t Hero_level;
+extern RC_ctrl_t rc_ctrl; // 遥控器信息结构体
+extern Video_ctrl_t video_ctrl[2]; 
+extern float powerdata[4];
+extern uint16_t shift_flag;
+extern SuperCapRx_t SuperCapRx;
+extern referee_infantry_t referee_infantry;
+
+int16_t chassis_speed_max = 0;
+int16_t chassis_wz_max = 4000;
+
+chassis_t chassis;
+motor_info_t motor_info_chassis[10]; // 电机信息结构体
 //yaw校准参数
 float Yaw;//用来计算
 float Yaw_update;
 float Yaw_init;
 int yaw_correction_flag = 1; // yaw值校正标志
 float relative_yaw=0;
-static uint8_t cycle = 0; // do while循环一次的条件
 float imu_err_yaw = 0;    // 记录yaw飘移的数值便于进行校正
 
-// pid_struct_t supercap_pid;
-motor_info_t motor_info_chassis[10]; // 电机信息结构体
-// fp32 superpid[3] = {120, 0.1, 0};
+static uint8_t cycle = 0; // do while循环一次的条件
 
-extern float Hero_chassis_power;
-extern uint16_t Hero_chassis_power_buffer;
-extern uint8_t rx_buffer_c[49];
-extern uint8_t rx_buffer_d[128];
-extern uint8_t Hero_level;
-
-int8_t chassis_mode;
-uint8_t supercap_flag = 0;         
-extern RC_ctrl_t rc_ctrl; // 遥控器信息结构体
-extern float powerdata[4];
-extern uint16_t shift_flag;
+uint8_t supercap_mode_Rx = 0;
+uint8_t supercap_flag = 0;  
+int8_t chassis_mode;       
 static int16_t key_x_fast, key_y_fast, key_x_slow, key_y_slow, key_Wz_acw, key_Wz_cw;
-// uint8_t rc[18];
 //static referee_info_t *referee_data; // 用于获取裁判系统的数据
 
 //功率限制
@@ -83,8 +86,6 @@ static double Scaling1 = 0, Scaling2 = 0, Scaling3 = 0, Scaling4 = 0;  // 比例
 float Klimit = 1;                                                      // 限制值
 float Plimit = 0;                                                      // 约束比例
 float Chassis_pidout_max;                                              // 输出值限制
-//
-extern  Video_ctrl_t video_ctrl[2]; 
 
 static void Chassis_Init();
 
@@ -321,50 +322,18 @@ static void read_keyboard_video(void)
     else
          chassis_mode = 4; // stop
 
-    // // C键控制超级电容
-    // if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 2 == 1)
-    // {
-    //   supercap_flag = 1;
-    //   supcap_mode = SUPCAP_ON;
-    // }
-    // else
-    // {
-    //   supercap_flag = 0;
-    //   supcap_mode = SUPCAP_OFF;
-    // }
-
-    // // R键控制底盘小陀螺速度
-    // if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_R] % 2 == 1)
-    // {
-    //   chassis_wz_max = CHASSIS_WZ_MAX_2; // 因为默认为1，这里保证第一次按下就能切换
-    //   top_mode = TOP_HIGH;
-    // }
-    // else
-    // {
-    //   chassis_wz_max = CHASSIS_WZ_MAX_1;
-    //   top_mode = TOP_LOW;
-    // }
-
-    // // Q键切换发射模式，单发和爆破
-    // if (video_ctrl[TEMP].key_count[KEY_PRESS][Key_Q] % 2 == 1)
-    //   ui_data.shoot_mode = SHOOT_BUFF;
-    // else
-    //   ui_data.shoot_mode = SHOOT_NORMAL;
-
-    // // E键切换摩擦轮速度，012分别为low，normal，high
-    // switch (friction_mode)
-    // {
-    // case 0:
-    //   ui_data.friction_mode = FRICTION_LOW;
-    //   break;
-    // case 1:
-    //   ui_data.friction_mode = FRICTION_NORMAL;
-    //   break;
-    // case 2:
-    //   ui_data.friction_mode = FRICTION_HIGH;
-    //   break;
-    // }
-  
+    // C键控制超级电容
+    switch (SuperCapRx.state)
+    {
+    case 0:
+      supercap_flag = 0;
+      supercap_mode_Rx = 0; //直连回路
+      break;
+    case 3:
+      supercap_flag = 1;
+      supercap_mode_Rx = 1; //电容回路
+      break;
+    }
 }
 
 /********************************** 键盘控制函数 *********************************/
@@ -497,147 +466,76 @@ static void key_control_video()
 // 判断机器人等级，赋值最大速度
 static void level_judge()
 {
-  // if (referee_hero.robot_level != 0)
-  // {
-  //   switch (referee_hero.robot_level)
-  //   {
-  //   case 1:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_1;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_1 + 3000;
-  //     break;
-  //   case 2:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_2;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_2 + 3000;
-  //     break;
-  //   case 3:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_3;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_3 + 3000;
-  //     break;
-  //   case 4:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_4;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_4 + 3000;
-  //     break;
-  //   case 5:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_5;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_5 + 3000;
-  //     break;
-  //   case 6:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_6;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_6 + 3000;
-  //     break;
-  //   case 7:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_7;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_7 + 3000;
-  //     break;
-  //   case 8:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_8;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_8 + 3000;
-  //     break;
-  //   case 9:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_9;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_9 + 3000;
-  //     break;
-  //   case 10:
-  //     if (!supercap_flag)
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_10;
-  //     else
-  //       chassis_speed_max = CHASSIS_SPEED_MAX_10 + 3000;
-  //     break;
-  //   }
-  // }
-  // else
+  if (referee_infantry.robot_level != 0)
+  {
+    switch (referee_infantry.robot_level)
+    {
+    case 1:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_1;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_1 + 3000;
+      break;
+    case 2:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_2;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_2 + 3000;
+      break;
+    case 3:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_3;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_3 + 3000;
+      break;
+    case 4:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_4;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_4 + 3000;
+      break;
+    case 5:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_5;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_5 + 3000;
+      break;
+    case 6:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_6;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_6 + 3000;
+      break;
+    case 7:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_7;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_7 + 3000;
+      break;
+    case 8:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_8;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_8 + 3000;
+      break;
+    case 9:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_9;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_9 + 3000;
+      break;
+    case 10:
+      if (!supercap_flag)
+        chassis_speed_max = CHASSIS_SPEED_MAX_10;
+      else
+        chassis_speed_max = CHASSIS_SPEED_MAX_10 + 3000;
+      break;
+    }
+  }
+  else
     chassis_speed_max = CHASSIS_SPEED_MAX_1;
 }
 
-// static void level_judge()
-// {
-//   if (Hero_level)
-//   {
-//     switch (Hero_level)
-//     {
-//     case 1:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_1;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_1 + 3000;
-//       break;
-//     case 2:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_2;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_2 + 3000;
-//       break;
-//     case 3:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_3;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_3 + 3000;
-//       break;
-//     case 4:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_4;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_4 + 3000;
-//       break;
-//     case 5:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_5;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_5 + 3000;
-//       break;
-//     case 6:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_6;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_6 + 3000;
-//       break;
-//     case 7:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_7;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_7 + 3000;
-//       break;
-//     case 8:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_8;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_8 + 3000;
-//       break;
-//     case 9:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_9;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_9 + 3000;
-//       break;
-//     case 10:
-//       if (!supercap_flag)
-//         chassis_speed_max = CHASSIS_SPEED_MAX_10;
-//       else
-//         chassis_speed_max = CHASSIS_SPEED_MAX_10 + 3000;
-//       break;
-//     }
-//   }
-//   else
-//     chassis_speed_max = CHASSIS_SPEED_MAX_1;
-// }
 /****************************************************************************************/
 
 // // 运动解算
@@ -717,8 +615,8 @@ static void RC_Move(void)
   chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
 
   /*************记得加上线性映射***************/
-  chassis.Vx = - map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+key_x_fast - key_x_slow;
-  chassis.Vy = - map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
+  chassis.Vx =  map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+key_x_fast - key_x_slow;
+  chassis.Vy = map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
   chassis.Wz = map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
 
   relative_yaw = (Yaw_update - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
@@ -750,7 +648,6 @@ static void RC_Move(void)
 
   cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差
 
-
 }
 
 // 小陀螺模式
@@ -761,7 +658,7 @@ static void gyroscope(void)
   chassis.Vx = map_range(rc_ctrl.rc.ch[3], RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
   chassis.Vy = map_range(rc_ctrl.rc.ch[2], RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
 
-    relative_yaw = (Yaw_update - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
+  relative_yaw = (Yaw_update - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
 
   int16_t temp_Vx = 0;
   int16_t temp_Vy = 0;
@@ -778,20 +675,19 @@ static void gyroscope(void)
 // 底盘跟随云台
 static void chassis_follow(void)
 {
-
   chassis.Vx = rc_ctrl.rc.ch[3]; // 前后输入
   chassis.Vy = rc_ctrl.rc.ch[2]; // 左右输入
   // chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
   /*************记得加上线性映射***************/
-  chassis.Vx = - map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
-  chassis.Vy = - map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
+  chassis.Vx =  map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
+  chassis.Vy =  map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
 
   // int16_t relative_yaw = Yaw - INS.Yaw_update; // 最新的减去上面的
   relative_yaw = Yaw_update-Yaw_top;
   // int16_t yaw_speed = pid_calc(&pid_yaw_angle, 0, relative_yaw);
   // int16_t rotate_w = (chassis.motor_info[0].rotor_speed + chassis.motor_info[1].rotor_speed + chassis.motor_info[2].rotor_speed + chassis.motor_info[3].rotor_speed) / (4 * 19);
   // 消除静态旋转
-  if (relative_yaw > -5 && relative_yaw < 5)
+  if (relative_yaw > -3 && relative_yaw < 3)
   {
     chassis.Wz = 0;
   }
@@ -811,7 +707,7 @@ static void chassis_follow(void)
 
   chassis.Vx = cos(-relative_yaw / 57.3f) * Temp_Vx - sin(-relative_yaw / 57.3f) * Temp_Vy;
   chassis.Vy = sin(-relative_yaw / 57.3f) * Temp_Vx + cos(-relative_yaw / 57.3f) * Temp_Vy;
-    cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
+  cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
 
 }
 
@@ -831,7 +727,7 @@ static void yaw_correct(void)
   if (yaw_correction_flag)
   {
     yaw_correction_flag = 0;
-    Yaw_init = yaw12;//下面的
+    Yaw_init = Yaw1;//下面的
   }
   // Wz为负，顺时针旋转，陀螺仪飘 60°/min（以3000为例转出的，根据速度不同调整）
   // 解决yaw偏移，完成校正
@@ -844,7 +740,7 @@ static void yaw_correct(void)
       imu_err_yaw += 0.001f;
     // imu_err_yaw += 0.001f * chassis_speed_max / 3000.0f;
   }
-  Yaw_update = yaw12 - Yaw_init + imu_err_yaw;
+  Yaw_update = Yaw1 - Yaw_init + imu_err_yaw;
 }
 
 //***************************过零处理*********************************
@@ -862,12 +758,13 @@ static void detel_calc(fp32 *angle)
     *angle += 360;
   }
 }
+
 static void Chassis_Power_Limit(double Chassis_pidout_target_limit)
 {
   // 819.2/A，假设最大功率为120W，那么能够通过的最大电流为5A，取一个保守值：800.0 * 5 = 4000
 
   Watch_Power_Max = Klimit;
-    Watch_Power = Hero_chassis_power;
+  Watch_Power = Hero_chassis_power;
   Watch_Buffer = Hero_chassis_power_buffer; // 限制值，功率值，缓冲能量值，初始值是1，0，0
   // Watch_Power = referee_data->PowerHeatData.chassis_power; // powerd.chassis_power
   // Watch_Buffer = referee_data->PowerHeatData.buffer_energy; // powerd.chassis_power_buffer
@@ -936,6 +833,7 @@ static void Chassis_Power_Limit(double Chassis_pidout_target_limit)
     chassis.motor_info[3].set_current = Scaling4 * (Chassis_pidout_max * Klimit) * Plimit; /*同比缩放电流*/
   }
 }
+
 /***************** 手动yaw值校正（仅在正常运动模式生效） ******************/
 static void manual_yaw_correct()
 {

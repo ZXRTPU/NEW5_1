@@ -16,8 +16,8 @@
 #include "stdint.h"
 #include "main.h"
 //#include "usart.h"
-
-#include "referee_protocol.h"
+#include "judge.h"
+//#include "referee_protocol.h"
 
 // 用于遥控器数据读取,遥控器数据是一个大小为2的数组
 #define LASTV 1

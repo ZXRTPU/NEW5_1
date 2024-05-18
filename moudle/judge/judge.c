@@ -4,6 +4,7 @@
 #include "struct_typedef.h"
 
 JUDGE_MODULE_DATA Judge_Hero;
+referee_infantry_t referee_infantry; // 裁判系统英雄机器人数据
 
 uint8_t Hero_level;
 uint8_t Hero_id;
@@ -134,6 +135,13 @@ void Update_data()
     Hero_chassis_power_limit = Judge_Hero.robot_status.chassis_power_limit;       // 功率限制
     Hero_chassis_power_buffer = Judge_Hero.power_heat.chassis_power_buffer;       // 缓冲能量
     Hero_chassis_power = Judge_Hero.power_heat.chassis_power;                     // 实时功率
+
+    //用于超级电容数据
+    referee_infantry.robot_level = Judge_Hero.robot_status.robot_level; // 机器人等级
+    referee_infantry.buffer_energy = Judge_Hero.power_heat.chassis_power_buffer;       // 缓冲能量
+    referee_infantry.chassis_power = Judge_Hero.power_heat.chassis_power;                     // 实时功率
+    referee_infantry.chassis_power_limit = Judge_Hero.robot_status.chassis_power_limit;       // 功率限制
+    
     if (Judge_Hero.shoot_data.bullet_speed)
     {
         Hero_42mm_speed = Judge_Hero.shoot_data.bullet_speed;

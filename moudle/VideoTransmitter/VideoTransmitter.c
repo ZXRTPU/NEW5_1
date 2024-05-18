@@ -3,8 +3,8 @@
 //#include "daemon.h"
 #include "string.h"
 #include "CRC.h"
-#include "referee_protocol.h"
-#include "robot_def.h"
+//#include "referee_protocol.h"
+//#include "robot_def.h"
 
 #define RE_RX_BUFFER_SIZE 255u // 裁判系统接收缓冲区大小
 

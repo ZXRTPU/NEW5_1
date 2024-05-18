@@ -29,6 +29,7 @@
 #include "rc_potocal.h"
 #include "stm32f4xx_it.h"
 #include "UI_task.h"
+#include "super_cap.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +51,7 @@
 /* USER CODE BEGIN Variables */
 osThreadId Chassis_taskHandle;
 osThreadId UI_taskHandle;
-
+osThreadId SupercapTaskHandle;
 /* USER CODE END Variables */
 osThreadId TEMP_IMUHandle;
 
@@ -58,7 +59,7 @@ osThreadId TEMP_IMUHandle;
 /* USER CODE BEGIN FunctionPrototypes */
 osThreadId LEDHandle;
 void led_task(void const * argument);
-
+void Supercap_task(void const *argument);
 /* USER CODE END FunctionPrototypes */
 
 void imu_temp_control_task(void const * argument);
@@ -123,6 +124,9 @@ void MX_FREERTOS_Init(void) {
    osThreadDef(UItask, UI_Task, osPriorityRealtime, 0, 1024);
   UI_taskHandle = osThreadCreate(osThread(UItask), NULL);
   /* USER CODE END RTOS_THREADS */
+
+  osThreadDef(SupercapTask, Supercap_task, osPriorityNormal, 0, 128);
+  SupercapTaskHandle = osThreadCreate(osThread(SupercapTask), NULL);
 
 }
 

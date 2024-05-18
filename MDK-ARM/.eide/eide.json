@@ -188,8 +188,7 @@
         "../moudle/referee/referee_task.c",
         "../moudle/referee/referee_UI.c",
         "../moudle/jy901",
-        "../moudle/referee",
-        "../application/super cap.c"
+        "../moudle/referee"
       ],
       "toolchain": "AC5",
       "compileConfig": {

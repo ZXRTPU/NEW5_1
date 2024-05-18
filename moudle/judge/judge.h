@@ -230,7 +230,6 @@ enum judge_robot_ID{
 	plane_blue     = 106,
 };
 
-
 typedef __packed struct{
 	uint16_t teammate_hero;
 	uint16_t teammate_engineer;
@@ -248,6 +247,22 @@ typedef __packed struct{
 	uint16_t client_plane;
 } ext_interact_id_t;
 
+/* 帧头定义 */
+typedef struct
+{
+	uint8_t SOF;
+	uint16_t DataLength;
+	uint8_t Seq;
+	uint8_t CRC8;
+} xFrameHeader;
+
+typedef struct
+{
+	uint8_t robot_level;		  // 机器人等级
+	uint16_t chassis_power_limit; // 底盘功率上限
+	float chassis_power;		  // 底盘功率（单位：W）
+	uint16_t buffer_energy;		  // 缓冲能量（单位：J）
+} referee_infantry_t;
 
 typedef __packed struct JUDGE_MODULE_DATA
 {

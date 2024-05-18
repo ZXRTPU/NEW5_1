@@ -1,26 +1,27 @@
 #include "drv_can.h"
 #include "VideoTransmitter.h"
+#include "super_cap.h"
+
+#define RC_CH_VALUE_OFFSET ((uint16_t)1024)
+#define POWERDATA_ID 0x301
+
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
 extern RC_ctrl_t rc_ctrl;
+extern chassis_t chassis;
+extern SuperCapRx_t SuperCapRx;
+
+uint8_t rx_data2[8];
 uint16_t can_cnt_1 = 0;
 int16_t yy;
 int16_t Roll0;
 int16_t Pitch0;
 int16_t Yaw0;
-float Yaw1;
-
-extern chassis_t chassis;
-#define RC_CH_VALUE_OFFSET ((uint16_t)1024)
-
-// extern shooter_t shooter;
+double Yaw1;
+float Yaw_top;
 
 float powerdata[4];
 uint16_t pPowerdata[8];
-
-uint8_t rx_data2[8];
-float Yaw_top;
-
 uint16_t setpower = 5500;
 int canerror = 0;
 
@@ -28,8 +29,6 @@ int canerror = 0;
 static uint8_t video_buf[12]; // 图传接收的buffer
 uint8_t vision_is_tracking;
 uint8_t friction_mode;
-
-
 
 void CAN1_Init(void)
 {
@@ -79,13 +78,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
   {
     uint8_t rx_data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data); // receive can1 data
-    if (rx_header.StdId == 0x388)                                //IMU   // 上C向下C传IMU数据
-    {
-      Roll0= ((rx_data[1] << 8) | rx_data[0]);
-      Pitch0=((rx_data[3] << 8) | rx_data[2]);
-      Yaw0=((rx_data[5] << 8) | rx_data[4]);//下面的
-      Yaw1=Yaw0/100.00;//小数部分
-    }
 
     // 底盤电机信息接收
     if ((rx_header.StdId >= 0x201)     // 201-204
@@ -101,19 +93,28 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
         can_cnt_1++;
       }
     }
+
+    //超级电容数据接收
+    if (rx_header.StdId == POWERDATA_ID) // 0x301
+    {
+      SuperCapRx.voltage = (((uint16_t)rx_data[0] << 8) | rx_data[1]) / 1000;
+      SuperCapRx.power = (uint16_t)(rx_data[2] << 8) | rx_data[3] / 1000;
+      SuperCapRx.state = rx_data[4];
+    }
   }
-  // 电机信息接收
+
   if (hcan->Instance == CAN1)
   {
     uint8_t rx_data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data); // receive can2 data
-    
-    // if (rx_header.StdId == 0x55) // 接收下C板传来的IMU数据
-    // {
-    //   Yaw_top = (int16_t)((rx_data[0] << 8) | rx_data[1]);   // yaw
-    //   // INS_bottom.Roll = (int16_t)((rx_data[2] << 8) | rx_data[3]);  // roll（roll和pitch根据c放置位置不同可能交换）
-    //   // INS_bottom.Pitch = (int16_t)((rx_data[4] << 8) | rx_data[5]); // pitch
-    // }
+
+    if (rx_header.StdId == 0x388)                                //IMU   // 上C向下C传IMU数据
+    {
+      Roll0= ((rx_data[1] << 8) | rx_data[0]);
+      Pitch0=((rx_data[3] << 8) | rx_data[2]);
+      Yaw0=((rx_data[5] << 8) | rx_data[4]);
+      Yaw1=(float)Yaw0*0.01;//小数部分
+    }
 
     if (rx_header.StdId == 0x35)                                   // 上C向下C传IMU数据
     {
