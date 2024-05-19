@@ -12,6 +12,7 @@
 #define MAX_ANGLE_VISION 29.2374
 #define MIN_ANGLE_VISION 45.3926
 #define RECV_PITCH_ANGLE 1.84
+#define MAP_DATA  22.8
 
 //1405~0 8192~7550  90 6020电机
 //17~-32  49 实际转过角度值
@@ -144,7 +145,7 @@ static void gimbal_current_give()
     if (switch_is_up(rc_ctrl[TEMP].rc.switch_right) || rc_ctrl[TEMP].mouse.press_r || video_ctrl[TEMP].key_data.right_button_down)
 	  {
         if (vision_is_tracking)
-            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid_vision,gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
+            gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid,gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
         else
             gimbal_Pitch.motor_info.set_current = pid_calc(&gimbal_Pitch.pid, gimbal_Pitch.motor_info.rotor_speed, gimbal_Pitch.speed_target);
     }
@@ -260,7 +261,7 @@ static void pitch_vision_mode()
                  gimbal_Pitch.angle_target = vision_pitch + normalized_input;
 							 
 							   detel_calc3(&gimbal_Pitch.angle_target);
-                 gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439, gimbal_Pitch.angle_target);
+                 gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439*MAP_DATA, gimbal_Pitch.angle_target*MAP_DATA);
              }
              else
              {
@@ -297,10 +298,11 @@ static void pitch_vision_mode()
 //							//视觉数据映射
 //							recv_vision_pitch = vision_pitch;
 							 
-                gimbal_Pitch.angle_target = vision_pitch + normalized_input;
+                gimbal_Pitch.angle_target = -vision_pitch + normalized_input;
 							 
 							  detel_calc3(&gimbal_Pitch.angle_target);
-                gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439, gimbal_Pitch.angle_target);
+							 
+                gimbal_Pitch.speed_target = gimbal_Pitch_PID_cal(&gimbal_Pitch.pid_vision,(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439*MAP_DATA, gimbal_Pitch.angle_target*MAP_DATA);
              }
           }
 

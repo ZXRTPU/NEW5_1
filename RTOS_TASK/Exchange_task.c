@@ -53,7 +53,7 @@ void Exchange_task(void const * argument)
 	while (1)
 	{
 		  //（编码值 - 3234）*0.0439
-		  send_vision_pitch = (gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439;
+		  send_vision_pitch = -(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439;
       VisionSetAltitude(INS.Yaw, send_vision_pitch, INS.Pitch); // 此处C板由于放置位置的关系， Roll 和 Pitch 对调
       VisionSend();
 		
