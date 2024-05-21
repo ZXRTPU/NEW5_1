@@ -94,6 +94,7 @@ typedef struct
 {
     uint8_t header;
     uint8_t is_tracking;
+	  uint8_t is_shooting; 
     float yaw;
     float pitch;
     uint16_t checksum;
@@ -103,6 +104,7 @@ typedef struct
 typedef struct
 {
     uint8_t header;
+	  uint8_t is_energy_mode; //0-瞄准装甲板，1-瞄准能量机关
     uint8_t detect_color;  // 0-red 1-blue 发1
     uint8_t reset_tracker; // 是否重置追踪器 发0
     uint8_t is_shoot;      // 是否开启自瞄模式 开发 1

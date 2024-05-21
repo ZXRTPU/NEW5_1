@@ -74,40 +74,40 @@
             "name": "User",
             "files": [
               {
-                "path": "../Src/main.c"
-              },
-              {
-                "path": "../Src/gpio.c"
-              },
-              {
-                "path": "../Src/freertos.c"
-              },
-              {
                 "path": "../Src/can.c"
               },
               {
                 "path": "../Src/dma.c"
               },
               {
+                "path": "../Src/freertos.c"
+              },
+              {
+                "path": "../Src/gpio.c"
+              },
+              {
                 "path": "../Src/i2c.c"
               },
               {
+                "path": "../Src/main.c"
+              },
+              {
                 "path": "../Src/spi.c"
-              },
-              {
-                "path": "../Src/tim.c"
-              },
-              {
-                "path": "../Src/usart.c"
-              },
-              {
-                "path": "../Src/stm32f4xx_it.c"
               },
               {
                 "path": "../Src/stm32f4xx_hal_msp.c"
               },
               {
                 "path": "../Src/stm32f4xx_hal_timebase_tim.c"
+              },
+              {
+                "path": "../Src/stm32f4xx_it.c"
+              },
+              {
+                "path": "../Src/tim.c"
+              },
+              {
+                "path": "../Src/usart.c"
               }
             ],
             "folders": []

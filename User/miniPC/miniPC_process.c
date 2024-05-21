@@ -20,6 +20,8 @@ static uint8_t *vis_recv_buff __attribute__((unused));
 
 extern uint16_t CRC_INIT;
 
+//*****************************************接收视觉数据***************************************************
+
 /**
  * @brief 处理视觉传入的数据
  *
@@ -86,6 +88,10 @@ Vision_Recv_s *VisionRecvRegister(Vision_Recv_Init_Config_s *recv_config)
     return recv_data;
 }
 
+//*******************************************************************************************************************
+
+
+//*********************************************发送视觉数据************************************************************
 /**
  * @brief 用于注册一个视觉发送数据结构体,返回一个视觉发送数据结构体指针
  *
@@ -131,19 +137,21 @@ static void SendProcess(Vision_Send_s *send, uint8_t *tx_buff)
 {
     /* 发送帧头，目标颜色，是否重置等数据 */
     tx_buff[0] = send->header;
-    tx_buff[1] = send->detect_color;
-    tx_buff[2] = send->reset_tracker;
-    tx_buff[3] = send->is_shoot;
+	  tx_buff[1] = send->is_energy_mode;
+    tx_buff[2] = send->detect_color;
+    tx_buff[3] = send->reset_tracker;
+    //tx_buff[4] = send->is_shoot;
+	  tx_buff[4] = 1;
 
     /* 使用memcpy发送浮点型小数 */
-    memcpy(&tx_buff[4], &send->roll, 4);
-    memcpy(&tx_buff[8], &send->yaw, 4);
-    memcpy(&tx_buff[12], &send->pitch, 4);
+    memcpy(&tx_buff[5], &send->roll, 4);
+    memcpy(&tx_buff[9], &send->yaw, 4);
+    memcpy(&tx_buff[13], &send->pitch, 4);
 
     /* 发送校验位 */
     send->checksum = Get_CRC16_Check_Sum(&tx_buff[0], VISION_SEND_SIZE - 3u, CRC_INIT);
-    memcpy(&tx_buff[16], &send->checksum, 2);
-    memcpy(&tx_buff[18], &send->tail, 1);
+    memcpy(&tx_buff[17], &send->checksum, 2);
+    memcpy(&tx_buff[19], &send->tail, 1);
 }
 
 /**
@@ -159,6 +167,17 @@ void VisionSetAltitude(float yaw, float pitch, float roll)
     vision_instance->send_data->pitch = pitch;
     vision_instance->send_data->roll = roll;
 }
+
+/**
+ * @brief 设置是否击打能量机关
+ *
+ * @param is_energy_mode 0-默认瞄准装甲板，1-瞄准能量机关
+ */
+void VisionSetEnergy(uint8_t is_energy_mode)
+{
+    vision_instance->send_data->is_energy_mode = is_energy_mode;
+}
+//*********************************************************************************************************
 
 #ifdef VISION_USE_UART
 
@@ -205,6 +224,7 @@ void VisionSend()
 
 #endif
 
+
 #ifdef VISION_USE_VCP
 
 #include "bsp_usb.h"
@@ -220,11 +240,23 @@ Vision_Recv_s *VisionInit(Vision_Init_Config_s *init_config)
     UNUSED(init_config); // 仅为了消除警告
     vision_instance = (Vision_Instance *)malloc(sizeof(Vision_Instance));
     memset(vision_instance, 0, sizeof(Vision_Instance));
-
+    Vision_Recv_Init_Config_s recv_config = {
+        .header = VISION_RECV_HEADER,
+    };
+		
     USB_Init_Config_s conf = {.rx_cbk = DecodeVision};
     vis_recv_buff = USBInit(conf);
-    vision_instance->recv_data = VisionRecvRegister(&init_config->recv_config);
-    vision_instance->send_data = VisionSendRegister(&init_config->send_config);
+    recv_config.header = VISION_RECV_HEADER;
+    vision_instance->recv_data = VisionRecvRegister(&recv_config);
+
+    Vision_Send_Init_Config_s send_config = {
+        .header = VISION_SEND_HEADER,
+        .detect_color = VISION_DETECT_COLOR_RED,
+        .reset_tracker = VISION_RESET_TRACKER_NO,
+        .is_shoot = VISION_SHOOTING,
+        .tail = VISION_SEND_TAIL,
+    };
+    vision_instance->send_data = VisionSendRegister(&send_config);
     // 为master process注册daemon,用于判断视觉通信是否离线
     Daemon_Init_Config_s daemon_conf = {
         .callback = VisionOfflineCallback, // 离线时调用的回调函数,会重启串口接收
