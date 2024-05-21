@@ -267,13 +267,13 @@ static void mode_choose()
       {
         // 底盘跟随云台模式，r键触发
         case 1:
-         manual_yaw_correct(); // 手动校正yaw值，头对正，按下V键
-         RC_Move();
+         chassis_follow();
          break;
 
         // 正常运动模式，f键触发
         case 2:
-          chassis_follow();
+         manual_yaw_correct(); // 手动校正yaw值，头对正，按下V键
+          RC_Move();
           break;
 
         // 停止模式
@@ -335,7 +335,7 @@ static void read_keyboard_video(void)
       break;
     }
 }
-
+ 
 /********************************** 键盘控制函数 *********************************/
 static void key_control_rc(void)
 {
@@ -675,12 +675,13 @@ static void gyroscope(void)
 // 底盘跟随云台
 static void chassis_follow(void)
 {
-  chassis.Vx = rc_ctrl.rc.ch[3]; // 前后输入
-  chassis.Vy = rc_ctrl.rc.ch[2]; // 左右输入
-  // chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
+  chassis.Vx = rc_ctrl.rc.ch[3]*3; // 前后输入
+  chassis.Vy = rc_ctrl.rc.ch[2]*3; // 左右输入
+  chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
   /*************记得加上线性映射***************/
   chassis.Vx =  map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
   chassis.Vy =  map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
+  chassis.Wz = map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
 
   // int16_t relative_yaw = Yaw - INS.Yaw_update; // 最新的减去上面的
   relative_yaw = Yaw_update-Yaw_top;
@@ -707,6 +708,7 @@ static void chassis_follow(void)
 
   chassis.Vx = cos(-relative_yaw / 57.3f) * Temp_Vx - sin(-relative_yaw / 57.3f) * Temp_Vy;
   chassis.Vy = sin(-relative_yaw / 57.3f) * Temp_Vx + cos(-relative_yaw / 57.3f) * Temp_Vy;
+
   cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
 
 }
@@ -766,12 +768,6 @@ static void Chassis_Power_Limit(double Chassis_pidout_target_limit)
   Watch_Power_Max = Klimit;
   Watch_Power = Hero_chassis_power;
   Watch_Buffer = Hero_chassis_power_buffer; // 限制值，功率值，缓冲能量值，初始值是1，0，0
-  // Watch_Power = referee_data->PowerHeatData.chassis_power; // powerd.chassis_power
-  // Watch_Buffer = referee_data->PowerHeatData.buffer_energy; // powerd.chassis_power_buffer
-// Watch_Power =0;
-// Watch_Buffer=60;
-  // Hero_chassis_power_buffer;//限制值，功率值，缓冲能量值，初始值是1，0，0
-  // get_chassis_power_and_buffer(&Power, &Power_Buffer, &Power_Max);//通过裁判系统和编码器值获取（限制值，实时功率，实时缓冲能量）
 
   Chassis_pidout_max = 61536; // 32768，40，960			15384 * 4，取了4个3508电机最大电流的一个保守值
 

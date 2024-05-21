@@ -1,5 +1,6 @@
 #include "drv_usart.h"
 #include  "main.h"
+#include "judge.h"
 
 #include  "rc_potocal.h"
 //#include  "judge.h"
@@ -88,7 +89,7 @@ static void uart_rx_idle_callback(UART_HandleTypeDef* huart)
 {
     __HAL_UART_CLEAR_IDLEFLAG(huart);	
 	/* handle received data in idle interrupt */
-		 if(huart == &huart3)
+	if(huart == &huart3)
 	{
 		/* clear DMA transfer complete flag */
 		__HAL_DMA_DISABLE(huart->hdmarx);
@@ -141,7 +142,6 @@ static void dma_m0_rxcplt_callback(DMA_HandleTypeDef *hdma)
 			hdma->Instance->CR |= (uint32_t)(DMA_SxCR_CT);	 // 将当前目标内存设置为Memory1
 			JUDGE_Receive(judge_dma_buffer[0],judge_receive_length);
 		}
-
 }
 
 

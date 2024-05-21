@@ -93,14 +93,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
         can_cnt_1++;
       }
     }
-
-    //超级电容数据接收
-    if (rx_header.StdId == POWERDATA_ID) // 0x301
-    {
-      SuperCapRx.voltage = (((uint16_t)rx_data[0] << 8) | rx_data[1]) / 1000;
-      SuperCapRx.power = (uint16_t)(rx_data[2] << 8) | rx_data[3] / 1000;
-      SuperCapRx.state = rx_data[4];
-    }
   }
 
   if (hcan->Instance == CAN1)
@@ -118,10 +110,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
 
     if (rx_header.StdId == 0x35)                                   // 上C向下C传IMU数据
     {
-            // rc_ctrl.rc.ch[4] = ((rx_data[0] | (rx_data[1] << 8)) & 0x07ff) - RC_CH_VALUE_OFFSET;
-
-          yy = (((rx_data[0] << 8) | rx_data[1])); // yaw
-          Yaw_top = yy / 100.0f;
+        yy = (((rx_data[0] << 8) | rx_data[1])); // yaw
+        Yaw_top = yy / 100.0f;
     }
 
     if (rx_header.StdId == 0x36) // 接收上C传来的图传数据
@@ -139,6 +129,14 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
     {
       vision_is_tracking = rx_data[0];
       friction_mode = rx_data[1];
+    }
+
+    //超级电容数据接收
+    if (rx_header.StdId == POWERDATA_ID) // 0x301
+    {
+      SuperCapRx.voltage = (((uint16_t)rx_data[0] << 8) | rx_data[1]) / 1000;
+      SuperCapRx.power = (uint16_t)(rx_data[2] << 8) | rx_data[3] / 1000;
+      SuperCapRx.state = rx_data[4];
     }
   }
 }

@@ -24,13 +24,17 @@ SuperCapRx_t SuperCapRx;
 extern referee_infantry_t referee_infantry;
 uint8_t supercap_mode_Tx = 0;
 
+int supercap_flag1 = 0;
+
 void read_keyboard();
 
 void Supercap_task(void const *argument)
 {
    	while (1)
 	{
-		read_keyboard();
+		supercap_flag1++; 
+		
+		read_keyboard(); 
 		SuperCapSet(referee_infantry.buffer_energy, referee_infantry.chassis_power_limit, supercap_mode_Tx);
 		SuperCapSend(SuperCapTx);
 		osDelay(10);
