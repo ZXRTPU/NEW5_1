@@ -13,6 +13,8 @@
 
 extern INS_t INS;
 extern gimbal_t gimbal_Pitch;
+extern Video_ctrl_t video_ctrl[2];
+extern RC_ctrl_t rc_ctrl[2]; // 遥控器信息结构体 
 
 static Vision_Recv_s *vision_recv_data;
 static RC_ctrl_t *rc_data;       // 遥控器数据,初始化时返回的指针
@@ -52,10 +54,39 @@ void Exchange_task(void const * argument)
 
 	while (1)
 	{
-		  //（编码值 - 3234）*0.0439
+			//自瞄模式选择
+			// 遥控+键鼠链路
+			if (rc_ctrl[TEMP].rc.switch_right)
+			{
+					switch (rc_ctrl[TEMP].key_count[KEY_PRESS][Key_Z] % 2)
+					{
+					case 0:
+						VisionSetEnergy(0);
+						break;
+					default:
+						VisionSetEnergy(1);
+						break;
+					}
+			}
+			
+			// 图传链路
+			else
+			{
+					switch (video_ctrl[TEMP].key_count[KEY_PRESS][Key_Z] % 2)
+					{
+					case 0:
+						VisionSetEnergy(0);
+						break;
+					default:
+						VisionSetEnergy(1);
+						break;
+					}
+			}
+			
+		  //pitch映射（编码值 - 3234）*0.0439
 		  send_vision_pitch = -(gimbal_Pitch.motor_info.rotor_angle -3234 ) * 0.0439;
       VisionSetAltitude(INS.Yaw, send_vision_pitch, INS.Pitch); // 此处C板由于放置位置的关系， Roll 和 Pitch 对调
-      VisionSend();
+  		VisionSend();
 		
 		  yaw = 100 * INS.Yaw;
 	    temp_remote[0] = ((int16_t)yaw >> 8) & 0xff;

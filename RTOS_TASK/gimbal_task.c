@@ -92,7 +92,7 @@ static void Gimbal_loop_Init()
     pid_init(&gimbal_Pitch.pid_angle, gimbal_Pitch.pid_angle_parameter, 10000, 1000);
 	  pid_init(&gimbal_Pitch.pid_vision, gimbal_Pitch.pid_vision_parameter, 10000, 1000);
 }
-
+ 
 // Ä£Ê½Ñ¡Ôñ
 static void mode_select()
 {

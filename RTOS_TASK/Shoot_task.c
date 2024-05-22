@@ -14,6 +14,9 @@ shooter_t shooter; // 发射机构信息结构体
 
 extern RC_ctrl_t rc_ctrl[2]; // 遥控器信息结构体
 extern Video_ctrl_t video_ctrl[2];
+extern int32_t vision_is_tracking;
+extern int32_t vision_is_shooting;
+
 bool is_angle_control = false;//单发
 float current_time = 0;
 float last_time = 0;
@@ -136,6 +139,12 @@ static void dial_control()
 			 is_angle_control = false;
 			 if (!is_angle_control)
           shooter.dial_speed_target= 0;
+    }
+		
+		// 最后判断，当按下右键使用视觉，且视觉控制不能发射时，拨盘电机停转
+    if (video_ctrl[TEMP].key_data.right_button_down && vision_is_shooting == 0 && vision_is_tracking == 1)
+    {
+        shooter.dial_speed_target = 0;
     }
 }
 

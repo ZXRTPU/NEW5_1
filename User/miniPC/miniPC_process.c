@@ -11,6 +11,7 @@
 float vision_yaw = 0;
 float vision_pitch = 0;
 int32_t vision_is_tracking = 0;
+int32_t vision_is_shooting = 0;
 
 extern INS_t INS;
 
@@ -32,12 +33,13 @@ extern uint16_t CRC_INIT;
 static void RecvProcess(Vision_Recv_s *recv, uint8_t *rx_buff)
 {
     /* 使用memcpy接收浮点型小数 */
-    memcpy(&recv->is_tracking, &rx_buff[1], 1);
-    memcpy(&recv->yaw, &rx_buff[2], 4);
-    memcpy(&recv->pitch, &rx_buff[6], 4);
+    recv->is_tracking = rx_buff[1];
+    recv->is_shooting = rx_buff[2];
+    memcpy(&recv->yaw, &rx_buff[3], 4);
+    memcpy(&recv->pitch, &rx_buff[7], 4);
 
     /* 接收校验位 */
-    memcpy(&recv->checksum, &rx_buff[10], 2);
+    memcpy(&recv->checksum, &rx_buff[11], 2);
 }
 
 /**
@@ -66,6 +68,7 @@ static void DecodeVision(void)
         RecvProcess(vision_instance->recv_data, vis_recv_buff);
 
         vision_is_tracking = vision_instance->recv_data->is_tracking;
+			  vision_is_shooting = vision_instance->recv_data->is_shooting;
         vision_yaw = vision_instance->recv_data->yaw;
         vision_pitch = vision_instance->recv_data->pitch;
     }
