@@ -325,10 +325,10 @@ typedef struct
 } userUI_control_t;
 
 void UI_Task(void const* argument);
-uint8_t get_usart6_tx_dma_busy_flag(void);
-void usart6_tx_dma_enable(uint8_t *data, uint16_t len);
+uint8_t get_usart5_tx_dma_busy_flag(void);
+void usart5_tx_dma_enable(uint8_t *data, uint16_t len);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart);
-void clear_usart6_tx_dma_busy_sign(void);
+void clear_usart5_tx_dma_busy_sign(void);
 
 uint8_t get_robot_id(void);
 uint16_t get_client_id(void);

@@ -56,7 +56,7 @@ extern SuperCapRx_t SuperCapRx;
 extern referee_infantry_t referee_infantry;
 
 int16_t chassis_speed_max = 0;
-int16_t chassis_wz_max = 4000;
+int16_t chassis_wz_max = 6000;
 
 chassis_t chassis;
 motor_info_t motor_info_chassis[10]; // 电机信息结构体
@@ -131,7 +131,7 @@ void Chassis_task(void const *pvParameters)
   Chassis_Init();
   // imu_task_init();
   // imu_task();
- for (;;) // 底盘运动任务
+  for (;;) // 底盘运动任务
   {
     level_judge();
 
@@ -236,18 +236,18 @@ static void mode_choose()
             }
         }
 
-          // 右拨杆下，遥控操作
-          else if (rc_ctrl.rc.s[0] == 2)
-          {
-            chassis_follow();
-          }
+        // 右拨杆下，遥控操作
+        else if (rc_ctrl.rc.s[0] == 2)
+        {
+          chassis_follow();
+        }
       
-          else
-          {
-            key_control_rc();
-            //RC_Move();
-            gyroscope();
-          }
+        else
+        {
+          key_control_rc();
+          //RC_Move();
+          gyroscope();
+        }
     }
 
     // 图传链路
@@ -256,12 +256,6 @@ static void mode_choose()
       // 底盘模式读取
       read_keyboard_video();
       key_control_video();
-
-      /*测试程序：确定可以接收到图传数据后注释*/
-      // if(video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_G]%2==1)
-      // {
-      //   gyroscope();
-      // }
 
       switch (chassis_mode)
       {
@@ -275,12 +269,8 @@ static void mode_choose()
          manual_yaw_correct(); // 手动校正yaw值，头对正，按下V键
           RC_Move();
           break;
-
-        // 停止模式
-        case 3:
-          gyroscope();
-          break;
-
+        
+        //急停模式
         default:
           chassis_mode_stop();
           break;
@@ -313,14 +303,12 @@ static void read_keyboard_rc(void)
 //键盘控制
 static void read_keyboard_video(void)
 {
-    if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2 == 0)
-         chassis_mode = 1; // rc
-    else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2 == 1)
-         chassis_mode = 2; // follow
-    // else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 2 == 1)
-    //      chassis_mode = 3; // gyro
+    if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_R] % 2 == 0 && !video_ctrl[TEMPV].key[V_KEY_PRESS].shift)
+         chassis_mode = 1; // follow
+    else if (video_ctrl[TEMPV].key_count[V_KEY_PRESS][V_Key_R] % 2 == 1 || video_ctrl[TEMPV].key[V_KEY_PRESS].shift)
+         chassis_mode = 2; // rc
     else
-         chassis_mode = 4; // stop
+         chassis_mode = 3; // stop
 
     // C键控制超级电容
     switch (SuperCapRx.state)
@@ -401,9 +389,10 @@ static void key_control_rc(void)
   if (key_Wz_cw > 0)
     key_Wz_cw = 0;
 }
-
+ 
 static void key_control_video()
 {
+    //左右平移
     if (video_ctrl[TEMPV].key[V_KEY_PRESS].d)
       key_y_fast += KEY_START_OFFSET;
     else
@@ -413,7 +402,8 @@ static void key_control_video()
       key_y_slow += KEY_START_OFFSET;
     else
       key_y_slow -= KEY_STOP_OFFSET;
-
+    
+    //
     if (video_ctrl[TEMPV].key[V_KEY_PRESS].w)
       key_x_fast += KEY_START_OFFSET;
     else
@@ -436,7 +426,7 @@ static void key_control_video()
     else
       key_Wz_cw += KEY_STOP_OFFSET;
   
-
+  //平移速度
   if (key_x_fast > chassis_speed_max)
     key_x_fast = chassis_speed_max;
   if (key_x_fast < 0)
@@ -453,6 +443,7 @@ static void key_control_video()
     key_y_slow = chassis_speed_max;
   if (key_y_slow < 0)
     key_y_slow = 0;
+  //旋转速度
   if (key_Wz_acw > chassis_wz_max)
     key_Wz_acw = chassis_wz_max;
   if (key_Wz_acw < 0)
@@ -474,61 +465,61 @@ static void level_judge()
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_1;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_1 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_1 + 5000;
       break;
     case 2:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_2;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_2 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_2 + 5000;
       break;
     case 3:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_3;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_3 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_3 + 5000;
       break;
     case 4:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_4;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_4 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_4 + 5000;
       break;
     case 5:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_5;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_5 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_5 + 5000;
       break;
     case 6:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_6;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_6 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_6 + 5000;
       break;
     case 7:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_7;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_7 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_7 + 5000;
       break;
     case 8:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_8;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_8 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_8 + 5000;
       break;
     case 9:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_9;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_9 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_9 + 5000;
       break;
     case 10:
       if (!supercap_flag)
         chassis_speed_max = CHASSIS_SPEED_MAX_10;
       else
-        chassis_speed_max = CHASSIS_SPEED_MAX_10 + 3000;
+        chassis_speed_max = CHASSIS_SPEED_MAX_10 + 5000;
       break;
     }
   }
@@ -589,7 +580,7 @@ static void chassis_current_give()
     chassis.motor_info[i].set_current = pid_calc(&chassis.pid[i], chassis.motor_info[i].rotor_speed, chassis.speed_target[i]);
   }
   
-  Chassis_Power_Limit(CHASSIS_MAX_SPEED * 4); // 限制底盘功率
+  Chassis_Power_Limit(chassis_speed_max * 4); // 限制底盘功率
 
   set_motor_current_chassis(0, chassis.motor_info[0].set_current, chassis.motor_info[1].set_current, chassis.motor_info[2].set_current, chassis.motor_info[3].set_current);
   // set_curruent(MOTOR_3508_0, hcan1, chassis.motor_info[0].set_current, chassis.motor_info[1].set_current, chassis.motor_info[2].set_current, chassis.motor_info[3].set_current);
@@ -612,12 +603,12 @@ static void RC_Move(void)
   // 从遥控器获取控制输入
   chassis.Vx = rc_ctrl.rc.ch[3]*3; // 前后输入n     
   chassis.Vy = rc_ctrl.rc.ch[2]*3; // 左右输入
-  chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
+  chassis.Wz = rc_ctrl.rc.ch[4]*3; // 旋转输入
 
   /*************记得加上线性映射***************/
   chassis.Vx =  map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+key_x_fast - key_x_slow;
-  chassis.Vy = map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
-  chassis.Wz = map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
+  chassis.Vy =  map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
+  chassis.Wz =  map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
 
   relative_yaw = (Yaw_update - Yaw_top) / 57.3f; // 此处加负是因为旋转角度后，旋转方向相反
 
@@ -650,6 +641,47 @@ static void RC_Move(void)
 
 }
 
+// 底盘跟随云台
+static void chassis_follow(void)
+{
+
+  chassis.Vx = rc_ctrl.rc.ch[3]; // 前后输入
+  chassis.Vy = rc_ctrl.rc.ch[2]; // 左右输入
+  // chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
+  /*************记得加上线性映射***************/
+  chassis.Vx = map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
+  chassis.Vy = map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
+
+  // int16_t relative_yaw = Yaw - INS.Yaw_update; // 最新的减去上面的
+ relative_yaw = Yaw_update-Yaw_top;
+  // int16_t yaw_speed = pid_calc(&pid_yaw_angle, 0, relative_yaw);
+  // int16_t rotate_w = (chassis.motor_info[0].rotor_speed + chassis.motor_info[1].rotor_speed + chassis.motor_info[2].rotor_speed + chassis.motor_info[3].rotor_speed) / (4 * 19);
+  // 消除静态旋转
+  if (relative_yaw > -3 && relative_yaw < 3)
+  {
+    chassis.Wz = 0;
+  }
+  else
+  {
+        detel_calc(&relative_yaw);
+        chassis.Wz = -relative_yaw*120;
+    // chassis.Wz = pid_calc(&pid_yaw_speed, yaw_speed, rotate_w);
+
+    if(chassis.Wz > 2 * chassis_wz_max)
+    chassis.Wz =2 * chassis_wz_max;
+    if(chassis.Wz < -2 * chassis_wz_max)
+    chassis.Wz = -2 * chassis_wz_max;
+  }
+  int16_t Temp_Vx = chassis.Vx;
+  int16_t Temp_Vy = chassis.Vy;
+
+  chassis.Vx = cos(-relative_yaw / 57.3f) * Temp_Vx - sin(-relative_yaw / 57.3f) * Temp_Vy;
+  chassis.Vy = sin(-relative_yaw / 57.3f) * Temp_Vx + cos(-relative_yaw / 57.3f) * Temp_Vy;
+    cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
+
+}
+
+
 // 小陀螺模式
 static void gyroscope(void)
 {    
@@ -672,46 +704,6 @@ static void gyroscope(void)
   cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
 
 }
-// 底盘跟随云台
-static void chassis_follow(void)
-{
-  chassis.Vx = rc_ctrl.rc.ch[3]*3; // 前后输入
-  chassis.Vy = rc_ctrl.rc.ch[2]*3; // 左右输入
-  chassis.Wz = rc_ctrl.rc.ch[4]; // 旋转输入
-  /*************记得加上线性映射***************/
-  chassis.Vx =  map_range(chassis.Vx, RC_MIN, RC_MAX, motor_min, motor_max)+ key_x_fast - key_x_slow;
-  chassis.Vy =  map_range(chassis.Vy, RC_MIN, RC_MAX, motor_min, motor_max)+ key_y_fast - key_y_slow;
-  chassis.Wz = map_range(chassis.Wz, RC_MIN, RC_MAX, motor_min, motor_max)+key_Wz_acw + key_Wz_cw;
-
-  // int16_t relative_yaw = Yaw - INS.Yaw_update; // 最新的减去上面的
-  relative_yaw = Yaw_update-Yaw_top;
-  // int16_t yaw_speed = pid_calc(&pid_yaw_angle, 0, relative_yaw);
-  // int16_t rotate_w = (chassis.motor_info[0].rotor_speed + chassis.motor_info[1].rotor_speed + chassis.motor_info[2].rotor_speed + chassis.motor_info[3].rotor_speed) / (4 * 19);
-  // 消除静态旋转
-  if (relative_yaw > -3 && relative_yaw < 3)
-  {
-    chassis.Wz = 0;
-  }
-  else
-  {
-    detel_calc(&relative_yaw);
-    chassis.Wz = -relative_yaw*160;
-    // chassis.Wz = pid_calc(&pid_yaw_speed, yaw_speed, rotate_w);
-
-    if(chassis.Wz > 2 * chassis_wz_max)
-    chassis.Wz =2 * chassis_wz_max;
-    if(chassis.Wz < -2 * chassis_wz_max)
-    chassis.Wz = -2 * chassis_wz_max;
-  }
-  int16_t Temp_Vx = chassis.Vx;
-  int16_t Temp_Vy = chassis.Vy;
-
-  chassis.Vx = cos(-relative_yaw / 57.3f) * Temp_Vx - sin(-relative_yaw / 57.3f) * Temp_Vy;
-  chassis.Vy = sin(-relative_yaw / 57.3f) * Temp_Vx + cos(-relative_yaw / 57.3f) * Temp_Vy;
-
-  cycle = 1; // 记录的模式状态的变量，以便切换到 follow 模式的时候，可以知道分辨已经切换模式，计算一次 yaw 的差值
-
-}
 
 /*************************** 急停模式 ****************************/
 void chassis_mode_stop()
@@ -729,7 +721,7 @@ static void yaw_correct(void)
   if (yaw_correction_flag)
   {
     yaw_correction_flag = 0;
-    Yaw_init = Yaw1;//下面的
+    Yaw_init = yaw12;//下面的
   }
   // Wz为负，顺时针旋转，陀螺仪飘 60°/min（以3000为例转出的，根据速度不同调整）
   // 解决yaw偏移，完成校正
@@ -742,7 +734,7 @@ static void yaw_correct(void)
       imu_err_yaw += 0.001f;
     // imu_err_yaw += 0.001f * chassis_speed_max / 3000.0f;
   }
-  Yaw_update = Yaw1 - Yaw_init + imu_err_yaw;
+  Yaw_update = yaw12 - Yaw_init + imu_err_yaw;
 }
 
 //***************************过零处理*********************************

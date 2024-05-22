@@ -93,6 +93,14 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
         can_cnt_1++;
       }
     }
+
+    //超级电容数据接收
+    if (rx_header.StdId == POWERDATA_ID) // 0x301
+    {
+      SuperCapRx.voltage = (((uint16_t)rx_data[0] << 8) | rx_data[1]) / 1000;
+      SuperCapRx.power = (uint16_t)(rx_data[2] << 8) | rx_data[3] / 1000;
+      SuperCapRx.state = rx_data[4];
+    }
   }
 
   if (hcan->Instance == CAN1)
@@ -130,14 +138,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) // 接受中断�
       vision_is_tracking = rx_data[0];
       friction_mode = rx_data[1];
     }
-
-    //超级电容数据接收
-    if (rx_header.StdId == POWERDATA_ID) // 0x301
-    {
-      SuperCapRx.voltage = (((uint16_t)rx_data[0] << 8) | rx_data[1]) / 1000;
-      SuperCapRx.power = (uint16_t)(rx_data[2] << 8) | rx_data[3] / 1000;
-      SuperCapRx.state = rx_data[4];
-    }
   }
 }
 
@@ -155,45 +155,20 @@ void can_remote(uint8_t sbus_buf[], uint8_t can_send_id)
 }
 
 //******************************************** 调用can来传输超级电容数据 *******************************************************
-// void can_remote(uint8_t tx_buff[], CAN_HandleTypeDef *_can_ins, uint32_t can_send_id, uint32_t len) // 调用can来发送遥控器数据
-// {
-// CAN_TxHeaderTypeDef tx_header;
+void can_remote_supercap(uint8_t tx_buff[], uint32_t can_send_id, uint32_t len) // 调用can来发送遥控器数据
+{
+  CAN_TxHeaderTypeDef tx_header;
 
-// tx_header.StdId = can_send_id;                         // 如果id_range==0则等于0x1ff,id_range==1则等于0x2ff（ID号）
-// tx_header.IDE = CAN_ID_STD;                            // 标准帧
-// tx_header.RTR = CAN_RTR_DATA;                          // 数据帧
-// tx_header.DLC = len;                                   // 发送数据长度（字节）
-// while (HAL_CAN_GetTxMailboxesFreeLevel(_can_ins) == 0) // 等待邮箱空闲
-// {
-// }
-// HAL_CAN_AddTxMessage(_can_ins, &tx_header, tx_buff, (uint32_t *)CAN_TX_MAILBOX0);
-// }
-// 发送电容数据
-// void Send_Cap_Data(CAN_HandleTypeDef *_hcan, float Cap_Vol, float Power_3508, uint8_t state)
-// {
-//   static CAN_TxHeaderTypeDef TX_MSG;
-//   static uint8_t CAN_Send_Data[8];
-//   static uint16_t Cap_Vol_send;
-//   static uint16_t Dipan_W;
-//   uint32_t send_mail_box;
-
-//   Cap_Vol_send = (int16_t)(Cap_Vol * 1000); // 将浮点型*1000，并转化为int16类型
-//   Dipan_W = (int16_t)(Power_3508 * 1000);
-
-//   TX_MSG.StdId = CAN_Transmit_Cap; ////电容发送标识符CAN_Transmit_Cap 0x301  //电容信息发送标识符
-//   TX_MSG.IDE = CAN_ID_STD;
-//   TX_MSG.RTR = CAN_RTR_DATA;
-//   TX_MSG.DLC = 0x05;
-
-//   CAN_Send_Data[0] = (Cap_Vol_send >> 8); ////将Cap_Vol_send的高字节移动到低字节位置
-//   CAN_Send_Data[1] = Cap_Vol_send;
-//   CAN_Send_Data[2] = (Dipan_W >> 8);
-//   CAN_Send_Data[3] = Dipan_W;
-//   CAN_Send_Data[4] = state;
- 
-
-//   HAL_CAN_AddTxMessage(_hcan, &TX_MSG, CAN_Send_Data, &send_mail_box);
-// }
+  tx_header.StdId = can_send_id;                         // 如果id_range==0则等于0x1ff,id_range==1则等于0x2ff（ID号）
+  tx_header.IDE = CAN_ID_STD;                            // 标准帧
+  tx_header.RTR = CAN_RTR_DATA;                          // 数据帧
+  tx_header.DLC = len;                                   // 发送数据长度（字节）
+  while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) // 等待邮箱空闲
+  {
+    
+  }
+  HAL_CAN_AddTxMessage(&hcan1, &tx_header, tx_buff, (uint32_t *)CAN_TX_MAILBOX0);
+}
 
 
 //******************************************** 调用can来控制电机 *******************************************************、

@@ -17,12 +17,14 @@ extern int flag[1];
 extern float powerdata[4];
 extern RC_ctrl_t rc_ctrl;
 extern Video_ctrl_t video_ctrl[2];
-extern  CAN_HandleTypeDef hcan2;
+extern CAN_HandleTypeDef hcan2;
 
 SuperCapTx_t SuperCapTx;
 SuperCapRx_t SuperCapRx;
 extern referee_infantry_t referee_infantry;
 uint8_t supercap_mode_Tx = 0;
+
+static uint8_t tx2up[8];		 // 用于发送数据给上位机
 
 int supercap_flag1 = 0;
 

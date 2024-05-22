@@ -8,17 +8,19 @@
 // #include "INS_task.h"
 #include "pid.h"
 #include "drv_usart.h"
+#include "VideoTransmitter.h"
 
 uint8_t UI_Seq;                         //包序号
 
 uint8_t referee_uart_tx_buf[2][150];    //裁判系统学生串口发送DMA缓冲池
 uint8_t referee_tx_fifo = 0;            //正在使用的缓存池
 
+extern RC_ctrl_t rc_ctrl; // 遥控器信息结构体
+extern Video_ctrl_t video_ctrl[2]; 
 extern float powerdata[4];
-
 extern JUDGE_MODULE_DATA Judge_Hero;
 extern UART_HandleTypeDef huart5;
-static uint8_t usart6_tx_dma_is_busy = 0;
+static uint8_t usart5_tx_dma_is_busy = 0;
 
 extern int8_t chassis_mode;
 
@@ -48,7 +50,6 @@ void userUI_draw_background(void);
   * @param[in]      缩放比例
   * @retval         none
   */
-
 //**************************************************************************************************************
 void userUI_draw_foresight_1(int16_t delta_x, int16_t delta_y, fp32 scale);
 
@@ -82,14 +83,15 @@ userUI_control_t userUI_control;
 void UI_Task(void const* argument)
 {
 
-     osDelay(USERUI_TASK_CONTROL_TIME_MS);
-  
+    osDelay(USERUI_TASK_CONTROL_TIME_MS);
+    
     //初始化
     userUI_init();
     
     while (1)
     {
-			  if (v_flag)
+        
+		if (video_ctrl[TEMPV].key[V_KEY_PRESS].v)
         {
             userUI_control.all_refresh_key_press_time += USERUI_TASK_CONTROL_TIME_MS;
             //当手动刷新按键被按下一段时间后，执行UI全部重绘
@@ -112,22 +114,22 @@ void UI_Task(void const* argument)
 				
 
 				      
-			 //*******************以下为自己定义动态ui******************************
+		//*******************以下为自己定义动态ui******************************
 				
-				//绘制超电
-		    userUI_draw_constant_power_allowance(1, &graph8, powerdata[1]);
+		//绘制超电
+		userUI_draw_constant_power_allowance(1, &graph8, powerdata[1]);
 				
-				//XTL模式
-				userUI_draw_robot_xtl_mode(1,chassis_mode );
+		//XTL模式
+		userUI_draw_robot_xtl_mode(1,chassis_mode );
 				
 
-			  //********************以上为自己定义动态ui*************
+		//********************以上为自己定义动态ui*************
 				
 				
-				userUI_control.module_extern_flag = 1;
+		userUI_control.module_extern_flag = 1;
         userUI_init();
         osDelay(USERUI_TASK_CONTROL_TIME_MS);
-		}
+	}
 }
 
 
@@ -144,20 +146,15 @@ void userUI_init(void)
 
     //绘制密位靶（图层1）
     userUI_draw_foresight_1(10, 0, 1.0f);
-		userUI_draw_foresight_4(10, 0, 1.0f);
-	  userUI_draw_foresight_5(10, 0, 1.0f);
-	  userUI_draw_foresight_6(10, 0, 1.0f);
-	//绘制背景元素（图层0，本场比赛不再变动）
-    userUI_draw_background();
+	userUI_draw_foresight_4(10, 0, 1.0f);
+	userUI_draw_foresight_5(10, 0, 1.0f);
+	userUI_draw_foresight_6(10, 0, 1.0f);
 	
+    //绘制背景元素（图层0，本场比赛不再变动）
+    userUI_draw_background();
 	userUI_draw_constant_power_allowance(0, &graph8, powerdata[1]);
 	userUI_draw_robot_xtl_mode(0, chassis_mode);
-	
-	
-
 }
-
-
 
 
 /**
@@ -170,14 +167,14 @@ void userUI_init(void)
 void userUI_draw_foresight_1(int16_t delta_x, int16_t delta_y, fp32 scale)
 {
     //画竖线
-		Line_Draw(&graph1, "FS", UI_Graph_ADD, 1, UI_Color_Cyan, 1, 960 ,  100 , 960 , 580 );
+	Line_Draw(&graph1, "FS", UI_Graph_ADD, 1, UI_Color_Cyan, 1, 960 ,  100 , 960 , 580 );
     //画横线
-	  Line_Draw(&graph2, "FS1", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x * 3,  580 + delta_y, 960 + delta_x * 3,  580 + delta_y);
+	Line_Draw(&graph2, "FS1", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x * 3,  580 + delta_y, 960 + delta_x * 3,  580 + delta_y);
     Line_Draw(&graph3, "FS2", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x * 2,  560 + delta_y, 960 + delta_x * 2,  560 + delta_y);
     Line_Draw(&graph4, "FS3", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x,  540 + delta_y, 960 + delta_x,  540 + delta_y);
     Line_Draw(&graph5, "FS4", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x,  520 + delta_y, 960 + delta_x,  520 + delta_y);
     Line_Draw(&graph6, "FS5", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x,  500 + delta_y, 960 + delta_x,  500 + delta_y);
-	  Line_Draw(&graph7, "FS6", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x * 2,  480 + delta_y, 960 + delta_x * 2,  480 + delta_y);
+	Line_Draw(&graph7, "FS6", UI_Graph_ADD, 1, UI_Color_Cyan, 2, 960 - delta_x * 2,  480 + delta_y, 960 + delta_x * 2,  480 + delta_y);
     ui_display_7_graph(&graph1, &graph2, &graph3, &graph4, &graph5, &graph6, &graph7);
 }
 
@@ -197,29 +194,28 @@ void userUI_draw_foresight_4(int16_t delta_x, int16_t delta_y, fp32 scale)
 void userUI_draw_foresight_5(int16_t delta_x, int16_t delta_y, fp32 scale)
 {
     //画横线
-	  Line_Draw(&graph1, "FS1", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x * 2, 320 + delta_y, 960 + delta_x * 2,  320 + delta_y);
-	  Line_Draw(&graph2, "FS2", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 300 + delta_y, 960 + delta_x,  300 + delta_y);
+	Line_Draw(&graph1, "FS1", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x * 2, 320 + delta_y, 960 + delta_x * 2,  320 + delta_y);
+	Line_Draw(&graph2, "FS2", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 300 + delta_y, 960 + delta_x,  300 + delta_y);
     Line_Draw(&graph3, "FS3", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 280 + delta_y, 960 + delta_x,  280 + delta_y);
     Line_Draw(&graph4, "FS4", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 260 + delta_y, 960 + delta_x,  260 + delta_y);
     Line_Draw(&graph5, "FS5", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x * 2, 240 + delta_y , 960 + delta_x * 2,  240 + delta_y * 2);
     Line_Draw(&graph6, "FS6", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 220 + delta_y, 960 + delta_x,  220 + delta_y);
-	  Line_Draw(&graph7, "FS7", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 200 + delta_y, 960 + delta_x,  200 + delta_y);
+	Line_Draw(&graph7, "FS7", UI_Graph_ADD, 5, UI_Color_Cyan, 2, 960 - delta_x, 200 + delta_y, 960 + delta_x,  200 + delta_y);
     ui_display_7_graph(&graph1, &graph2, &graph3, &graph4, &graph5, &graph6, &graph7);
 }
 
 void userUI_draw_foresight_6(int16_t delta_x, int16_t delta_y, fp32 scale)
 {
     //画横线
-	  Line_Draw(&graph1, "FS1", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 180 + delta_y, 960 + delta_x,  180 + delta_y);
-	  Line_Draw(&graph2, "FS2", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x * 2, 160 + delta_y, 960 + delta_x * 2,  160 + delta_y);
+	Line_Draw(&graph1, "FS1", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 180 + delta_y, 960 + delta_x,  180 + delta_y);
+	Line_Draw(&graph2, "FS2", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x * 2, 160 + delta_y, 960 + delta_x * 2,  160 + delta_y);
     Line_Draw(&graph3, "FS3", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 140 + delta_y, 960 + delta_x,  140 + delta_y);
     Line_Draw(&graph4, "FS4", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 120 + delta_y, 960 + delta_x,  120 + delta_y);
     Line_Draw(&graph5, "FS5", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 100 + delta_y, 960 + delta_x,  100 + delta_y);
     Line_Draw(&graph6, "FS6", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x * 2, 80 + delta_y, 960 + delta_x * 2,  80 + delta_y);
-	  Line_Draw(&graph7, "FS7", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 60 + delta_y, 960 + delta_x,  60 + delta_y);
+	Line_Draw(&graph7, "FS7", UI_Graph_ADD, 6, UI_Color_Cyan, 2, 960 - delta_x, 60 + delta_y, 960 + delta_x,  60 + delta_y);
     ui_display_7_graph(&graph1, &graph2, &graph3, &graph4, &graph5, &graph6, &graph7);
 }
-
 
 
 //基础图像（图层0）
@@ -250,7 +246,7 @@ void userUI_draw_background(void)
     //画“23V”
     string_Draw(&ui_str, "CVF", UI_Graph_ADD, 0, UI_Color_Green, 2, 10, 1340, 85, "23v");
 		
-		ui_display_7_graph(&graph1, &graph2, &graph3, &graph4, &graph5, &graph6, &graph7);
+	ui_display_7_graph(&graph1, &graph2, &graph3, &graph4, &graph5, &graph6, &graph7);
     ui_display_string(&ui_str);
 		
 		
@@ -319,9 +315,6 @@ void userUI_draw_robot_xtl_mode(uint8_t en, int refresh)
 	
     ui_display_string(&ui_str);
 }
-
-
-
 
 
 //********************************************************************************************************************
@@ -508,7 +501,7 @@ void string_Draw(String_Data* image, char imagename[3], uint32_t Graph_Operate, 
     uint8_t i;
 
     for (i = 0; i < 3 && imagename[i] != '\0'; i++)
-        image->Graph_Control.graphic_name[2 - i] = imagename[i];
+    image->Graph_Control.graphic_name[2 - i] = imagename[i];
     image->Graph_Control.graphic_tpye = UI_Graph_Char;
     image->Graph_Control.operate_tpye = Graph_Operate;
     image->Graph_Control.layer = Graph_Layer;
@@ -569,11 +562,11 @@ void UI_delete(uint8_t operate_type, uint8_t layer)
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(UI_Data_Delete) + 2);
 
     //6. DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(UI_Data_Delete) + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(UI_Data_Delete) + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
@@ -608,11 +601,11 @@ void ui_display_1_graph(Graph_Data* graph1)
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) + 2);
 
     //DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
@@ -650,11 +643,11 @@ void ui_display_2_graph(Graph_Data* graph1, Graph_Data* graph2)
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 2 + 2);
 
     //DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 2 + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 2 + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
@@ -698,11 +691,11 @@ void ui_display_5_graph(Graph_Data* graph1, Graph_Data* graph2, Graph_Data* grap
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 5 + 2);
 
     //5. DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 5 + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 5 + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
@@ -750,11 +743,11 @@ void ui_display_7_graph(Graph_Data* graph1, Graph_Data* graph2, Graph_Data* grap
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 7 + 2);
   
     //5. DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 7 + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(Graph_Data) * 7 + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
@@ -790,31 +783,25 @@ void ui_display_string(String_Data* str_data)
     Append_CRC16_Check_Sum(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(String_Data) + 2);
 
     //5. DMA发送
-    while (get_usart6_tx_dma_busy_flag())
+    while (get_usart5_tx_dma_busy_flag())
     {
         osDelay(1);
     }
-    usart6_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(String_Data) + 2);
+    usart5_tx_dma_enable(referee_uart_tx_buf[referee_tx_fifo], sizeof(UI_Packhead) + sizeof(UI_Data_Operate) + sizeof(String_Data) + 2);
     referee_tx_fifo = referee_tx_fifo == 0 ? 1 : 0;
 }
 
 
-
-
-
-
-
-uint8_t get_usart6_tx_dma_busy_flag(void)
+uint8_t get_usart5_tx_dma_busy_flag(void)
 {
-    return usart6_tx_dma_is_busy;
+    return usart5_tx_dma_is_busy;
     //return hdma_usart6_tx.State;
 }
 
 
-
-void usart6_tx_dma_enable(uint8_t *data, uint16_t len)
+void usart5_tx_dma_enable(uint8_t *data, uint16_t len)
 {
-    usart6_tx_dma_is_busy = 1;
+    usart5_tx_dma_is_busy = 1;
 
     HAL_UART_Transmit_DMA(&huart5, data, len);
 }
@@ -824,14 +811,14 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
 {
     if (huart == &huart5)
     {
-        clear_usart6_tx_dma_busy_sign();
+        clear_usart5_tx_dma_busy_sign();
     }
 }
 
 
-void clear_usart6_tx_dma_busy_sign(void)
+void clear_usart5_tx_dma_busy_sign(void)
 {
-    usart6_tx_dma_is_busy = 0;
+    usart5_tx_dma_is_busy = 0;
 }
 
 
